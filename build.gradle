@@ -12,9 +12,17 @@ repositories {
         name = "spigotmc-repo"
         url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
     }
+    maven {
+        url = "https://maven.enginehub.org/repo/"
+    }
+    maven {
+        url = "https://repo.dmulloy2.net/repository/public/"
+    }
 }
 
 dependencies {
+    compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.8'
+    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.7.0";
     compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
 }
 
