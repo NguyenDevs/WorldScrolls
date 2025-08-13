@@ -1,0 +1,18 @@
+# General Messages
+prefix: "&7[&dWorld&5Scroll"
+no-permission: "&cYou don't have permission to use this command!"
+plugin-reloaded: "&aConfiguration reloaded successfully!"
+player-only: "&cOnly players can use this command!"
+unknown-command: "&cUnknown command! Use &e/wsc &cto see the command list."
+
+# Command Help
+command-help:
+  header: "&8&l=== &dWorld&5Scrolls &dCommands &8&l==="
+  user-commands: "&e&lPlayer Commands:"
+  admin-commands: "&c&lAdmin Commands:"
+  menu: "&e/wsc menu &7- Open the scroll list menu"
+  recipe: "&e/wsc recipe &7- View crafting recipes"
+  admin: "&e/wsc admin &7- Open the admin menu"
+  give: "&e/wsc give &7- Give player a scroll"
+  reload: "&e/wsc reload &7- Reload the plugin"
+  footer: "&8&l=========================="
