@@ -3,6 +3,7 @@ package com.NguyenDevs.worldScrolls;
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsCommand;
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsTabCompleter;
 import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
+import com.NguyenDevs.worldScrolls.listeners.ScrollOfExit;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.managers.GUIManager;
 import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
@@ -67,6 +68,7 @@ public final class WorldScrolls extends JavaPlugin {
      */
     private void registerEventListeners() {
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new ScrollOfExit(this), this);
         getLogger().info("Additional event listeners registered successfully!");
     }
     
