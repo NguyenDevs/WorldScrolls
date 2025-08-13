@@ -1,6 +1,7 @@
 package com.NguyenDevs.worldScrolls.guis;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
+import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -235,6 +236,7 @@ public class RecipeGUI extends BaseGUI {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
                 currentPage.put(player.getUniqueId(), currentPageNum - 1);
+                SoundUtils.playPageTurnSound(player);
                 openRecipeList(player);
             }
             return;
@@ -243,6 +245,7 @@ public class RecipeGUI extends BaseGUI {
         if (slot == NEXT_PAGE_SLOT) {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             currentPage.put(player.getUniqueId(), currentPageNum + 1);
+            SoundUtils.playPageTurnSound(player);
             openRecipeList(player);
             return;
         }

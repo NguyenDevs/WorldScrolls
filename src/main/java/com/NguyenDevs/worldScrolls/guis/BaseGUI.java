@@ -3,6 +3,7 @@ package com.NguyenDevs.worldScrolls.guis;
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
+import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -63,6 +64,9 @@ public abstract class BaseGUI implements Listener {
         // Store and open inventory
         openInventories.put(player.getUniqueId(), inventory);
         player.openInventory(inventory);
+        
+        // Play GUI open sound
+        SoundUtils.playGUIOpenSound(player);
     }
     
     /**
@@ -199,6 +203,9 @@ public abstract class BaseGUI implements Listener {
             return;
         }
         
+        // Play GUI click sound for valid clicks
+        SoundUtils.playGUIClickSound(player);
+        
         // Handle click
         handleClick(player, inventory, slot, clickedItem, isRightClick);
     }
@@ -214,6 +221,8 @@ public abstract class BaseGUI implements Listener {
         Inventory inventory = event.getInventory();
         
         if (isThisGUI(inventory, player)) {
+            // Play GUI close sound
+            SoundUtils.playGUICloseSound(player);
             closeGUI(player);
         }
     }

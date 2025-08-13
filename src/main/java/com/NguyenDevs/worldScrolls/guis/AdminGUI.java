@@ -2,6 +2,7 @@ package com.NguyenDevs.worldScrolls.guis;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
+import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -176,6 +177,7 @@ public class AdminGUI extends BaseGUI {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
                 currentPage.put(player.getUniqueId(), currentPageNum - 1);
+                SoundUtils.playPageTurnSound(player);
                 openAdminPanel(player);
             }
             return;
@@ -184,6 +186,7 @@ public class AdminGUI extends BaseGUI {
         if (slot == NEXT_PAGE_SLOT) {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             currentPage.put(player.getUniqueId(), currentPageNum + 1);
+            SoundUtils.playPageTurnSound(player);
             openAdminPanel(player);
             return;
         }
@@ -230,10 +233,14 @@ public class AdminGUI extends BaseGUI {
                 admin.sendMessage(ColorUtils.colorize("&aYou received: " + scrollConfig.getString("name", scrollType)));
             }
             
+            // Play success sound
+            SoundUtils.playSuccessSound(admin);
+            
             // Log admin action
             plugin.getLogger().info("Admin " + admin.getName() + " gave themselves scroll: " + scrollType);
         } else {
             admin.sendMessage(ColorUtils.colorize("&cFailed to create scroll item!"));
+            SoundUtils.playErrorSound(admin);
         }
     }
     
@@ -246,12 +253,18 @@ public class AdminGUI extends BaseGUI {
             admin.sendMessage(ColorUtils.colorize("&aPlugin reloaded successfully!"));
             plugin.getLogger().info("Plugin reloaded by admin: " + admin.getName());
             
+            // Play reload sound
+            SoundUtils.playReloadSound(admin);
+            
             // Refresh the GUI
             openAdminPanel(admin);
         } catch (Exception e) {
             admin.sendMessage(ColorUtils.colorize("&cFailed to reload plugin! Check console for errors."));
             plugin.getLogger().severe("Failed to reload plugin via admin GUI: " + e.getMessage());
             e.printStackTrace();
+            
+            // Play error sound
+            SoundUtils.playErrorSound(admin);
         }
     }
     

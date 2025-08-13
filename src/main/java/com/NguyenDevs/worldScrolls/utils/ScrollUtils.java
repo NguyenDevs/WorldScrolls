@@ -106,6 +106,9 @@ public class ScrollUtils {
             } else {
                 player.sendMessage(plugin.getConfigManager().getMessage("scroll-blocked-generic"));
             }
+            
+            // Play permission denied sound (bass with low pitch)
+            com.NguyenDevs.worldScrolls.utils.SoundUtils.playPermissionDeniedSound(player);
             return false;
         }
         return true;
@@ -125,6 +128,9 @@ public class ScrollUtils {
             } else {
                 player.sendMessage(plugin.getConfigManager().getMessage("scroll-blocked-region"));
             }
+            
+            // Play permission denied sound (bass with low pitch)
+            com.NguyenDevs.worldScrolls.utils.SoundUtils.playPermissionDeniedSound(player);
             return false;
         }
         return true;

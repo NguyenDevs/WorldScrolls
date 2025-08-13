@@ -4,6 +4,7 @@ import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
 import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
+import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -109,6 +110,9 @@ public class WorldScrollsCommand implements CommandExecutor {
     private boolean handleAdminCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.admin")) {
             sender.sendMessage(configManager.getMessage("no-permission"));
+            if (sender instanceof Player) {
+                SoundUtils.playPermissionDeniedSound((Player) sender);
+            }
             return true;
         }
         
@@ -131,6 +135,9 @@ public class WorldScrollsCommand implements CommandExecutor {
     private boolean handleGiveCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.give")) {
             sender.sendMessage(configManager.getMessage("no-permission"));
+            if (sender instanceof Player) {
+                SoundUtils.playPermissionDeniedSound((Player) sender);
+            }
             return true;
         }
         
@@ -203,6 +210,12 @@ public class WorldScrollsCommand implements CommandExecutor {
             
             targetPlayer.sendMessage(ColorUtils.colorize("&aYou received " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a!"));
             sender.sendMessage(ColorUtils.colorize("&aGave " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a to " + targetPlayer.getName() + "!"));
+            
+            // Play success sounds
+            SoundUtils.playSuccessSound(targetPlayer);
+            if (sender instanceof Player && !sender.equals(targetPlayer)) {
+                SoundUtils.playSuccessSound((Player) sender);
+            }
         } else {
             sender.sendMessage(ColorUtils.colorize("&cFailed to create scroll item!"));
         }
@@ -216,6 +229,9 @@ public class WorldScrollsCommand implements CommandExecutor {
     private boolean handleReloadCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.reload")) {
             sender.sendMessage(configManager.getMessage("no-permission"));
+            if (sender instanceof Player) {
+                SoundUtils.playPermissionDeniedSound((Player) sender);
+            }
             return true;
         }
         
@@ -223,10 +239,20 @@ public class WorldScrollsCommand implements CommandExecutor {
             configManager.reloadConfigs();
             sender.sendMessage(configManager.getMessage("plugin-reloaded"));
             plugin.getLogger().info("Plugin reloaded by " + sender.getName());
+            
+            // Play reload sound
+            if (sender instanceof Player) {
+                SoundUtils.playReloadSound((Player) sender);
+            }
         } catch (Exception e) {
             sender.sendMessage(ColorUtils.colorize("&cFailed to reload plugin! Check console for errors."));
             plugin.getLogger().severe("Failed to reload plugin: " + e.getMessage());
             e.printStackTrace();
+            
+            // Play error sound
+            if (sender instanceof Player) {
+                SoundUtils.playErrorSound((Player) sender);
+            }
         }
         
         return true;
@@ -238,6 +264,9 @@ public class WorldScrollsCommand implements CommandExecutor {
     private boolean handleCheckCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.admin")) {
             sender.sendMessage(configManager.getMessage("no-permission"));
+            if (sender instanceof Player) {
+                SoundUtils.playPermissionDeniedSound((Player) sender);
+            }
             return true;
         }
         
