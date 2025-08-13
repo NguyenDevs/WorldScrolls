@@ -1,0 +1,4 @@
+name: WorldScrolls
+version: '1.0.0'
+main: com.NguyenDevs.worldScrolls.WorldScrolls
+api-version: '1.19'
