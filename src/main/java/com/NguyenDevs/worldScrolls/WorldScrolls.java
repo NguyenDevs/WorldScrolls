@@ -2,7 +2,9 @@ package com.NguyenDevs.worldScrolls;
 
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsCommand;
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsTabCompleter;
+import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
+import com.NguyenDevs.worldScrolls.managers.GUIManager;
 import com.NguyenDevs.worldScrolls.utils.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -11,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class WorldScrolls extends JavaPlugin {
 
     private ConfigManager configManager;
+    private GUIManager guiManager;
     private static WorldScrolls instance;
     
     @Override
@@ -21,6 +24,12 @@ public final class WorldScrolls extends JavaPlugin {
         // Initialize ConfigManager first
         configManager = new ConfigManager(this);
         configManager.initializeConfigs();
+        
+        // Initialize GUIManager
+        guiManager = new GUIManager(this);
+        
+        // Register additional event listeners
+        registerEventListeners();
         
         // Register commands and tab completers
         registerCommands();
@@ -47,6 +56,14 @@ public final class WorldScrolls extends JavaPlugin {
         
         getLogger().info("WorldScrolls has been disabled!");
         instance = null;
+    }
+    
+    /**
+     * Register additional event listeners
+     */
+    private void registerEventListeners() {
+        Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
+        getLogger().info("Additional event listeners registered successfully!");
     }
     
     /**
@@ -117,6 +134,13 @@ public final class WorldScrolls extends JavaPlugin {
      */
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+    
+    /**
+     * Get the GUIManager instance
+     */
+    public GUIManager getGUIManager() {
+        return guiManager;
     }
     
     /**

@@ -71,8 +71,8 @@ public class WorldScrollsCommand implements CommandExecutor {
             return true;
         }
         
-        // TODO: Open player GUI (will be implemented when GUI classes are done)
-        player.sendMessage(ColorUtils.colorize("&aOpening scroll menu... &7(GUI will be implemented soon)"));
+        // Open player GUI
+        plugin.getGUIManager().openPlayerMenu(player);
         
         return true;
     }
@@ -94,8 +94,8 @@ public class WorldScrollsCommand implements CommandExecutor {
             return true;
         }
         
-        // TODO: Open recipe GUI (will be implemented when GUI classes are done)
-        player.sendMessage(ColorUtils.colorize("&aOpening recipe book... &7(GUI will be implemented soon)"));
+        // Open recipe GUI
+        plugin.getGUIManager().openRecipeBook(player);
         
         return true;
     }
@@ -116,8 +116,8 @@ public class WorldScrollsCommand implements CommandExecutor {
         
         Player player = (Player) sender;
         
-        // TODO: Open admin GUI (will be implemented when GUI classes are done)
-        player.sendMessage(ColorUtils.colorize("&aOpening admin panel... &7(GUI will be implemented soon)"));
+        // Open admin GUI
+        plugin.getGUIManager().openAdminPanel(player);
         
         return true;
     }
