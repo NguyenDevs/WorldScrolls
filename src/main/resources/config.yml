@@ -1,0 +1,5 @@
+update-notify: true
+disabled-worlds:
+  - example
+  - exmaple_nether
+  - example_the_end
