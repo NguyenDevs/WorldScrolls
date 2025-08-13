@@ -2,3 +2,33 @@ name: WorldScrolls
 version: '1.0.0'
 main: com.NguyenDevs.worldScrolls.WorldScrolls
 api-version: '1.19'
+depend: [WorldGuard, ProtocolLib]
+softdepend: [PlaceholderAPI]
+
+commands:
+  worldscrolls:
+    description: Main command for WorldScrolls plugin
+    usage: /<command> [menu|recipe|admin|give|reload|help]
+    aliases: [wsc, ws, scrolls]
+
+permissions:
+  worldscrolls.*:
+    description: Access to all WorldScrolls features
+    default: op
+    children:
+      worldscrolls.use: true
+      worldscrolls.admin: true
+      worldscrolls.give: true
+      worldscrolls.reload: true
+  worldscrolls.use:
+    description: Use scrolls and basic commands
+    default: true
+  worldscrolls.admin:
+    description: Access to admin features
+    default: op
+  worldscrolls.give:
+    description: Give scrolls to players
+    default: op
+  worldscrolls.reload:
+    description: Reload plugin configuration
+    default: op
