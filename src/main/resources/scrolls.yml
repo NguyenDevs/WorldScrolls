@@ -1,0 +1,171 @@
+scroll_of_thorn:
+  enabled: true
+  name: "<gradient:#20f200:#00db84>Scroll Of Thorn</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense"
+    - "&7Creates a ring of &aSpikes &7at the designated location."
+    - "&7All enemies in the area of effect are immobilized"
+    - "for &2%immobilize% &7seconds and poisoned for &2%poison% &7seconds."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  immobilize: 5
+  poison: 3
+  cooldown: 5
+
+scroll_of_cyclone:
+  enabled: true
+  name: "<gradient:#85fff1:#4fcaff>Scroll Of Cyclone</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense"
+    - "&7Creates a &3Vortex of Pressure &7at designated location. Suck"
+    - "&7all enemies into the center of the vortex. After &a%duration% &7seconds,"
+    - "they will be thrown up."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  duration: 6
+  cooldown: 5
+
+scroll_of_exit:
+  enabled: true
+  name: "<gradient:#7d7675:#e48aff>Scroll Of Exit</gradient>"
+  lore:
+    - "&5Magic Scroll: &3Defense&7/&aActive"
+    - "&7%cast% seconds after use. will be immediately teleported"
+    - "&7to the designated location."
+    - " "
+    - "&f► &eLeft-Click &7to save exit point."
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  cast: 0.5
+  cooldown: 5
+
+scroll_of_frostbite:
+  enabled: true
+  name: "<gradient:#8ae6ff:#0090b8>Scroll Of Frostbite</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense"
+    - "&7Creates an &bIce &7cage at the designated location."
+    - "&7All trapped enemies will be frozen for &b%freeze% &7seconds"
+    - "&7and slowed for &3%slow% &7seconds."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  freeze: 5
+  slow: 5
+  cooldown: 5
+
+scroll_of_gravitation:
+  enabled: true
+  name: "<gradient:#3a3d3d:#96ffe7>Scroll Of Gravitation</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense&7/&aActive"
+    - "&7All enemies within a &6%range% block &7radius will be &9&nPulled back &7to the"
+    - "&7designated location. Or will pull you towards the designated location."
+    - "&eMax distance: 20 block."
+    - " "
+    - "&f► &eLeft-Click &7to pull back enemies to designated location."
+    - "&f► &eRight-Click &7to pull you to designated location."
+  craftable: true
+  pull-range: 6
+  max-range: 20
+  cooldown: 5
+
+scroll_of_invisibility:
+  enabled: true
+  name: "<gradient:#925cff:#d95cff>Scroll Of Invisibility</gradient>"
+  lore:
+    - "&5Magic Scroll: &3Defense&7/&2Passive"
+    - "&7When used, you will enter an &3Invisible &7state for &b%duration% &7seconds while"
+    - "&7also gaining &3acceleration energy &7and continuous &9night vision&7."
+    - "&ePassive: &7Auto active when HP under &c%auto-active-hp%"
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  duration: 480
+  auto-active-hp: 6
+  cooldown: 5
+
+scroll_of_meteor:
+  enabled: true
+  name: "<gradient:#f7054e:#f72905>Scroll Of Meteor</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense&7/&aActive"
+    - "&7When used, randomly create &6%min% &7to &6%max% &cMeteors &7at the designated location"
+    - "&7dealing massive damage along with stunning and knocking enemies into the air."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  min: 1
+  max: 5
+  damage: 20
+  cooldown: 120
+
+scroll_of_phoenix:
+  enabled: true
+  name: "<gradient:#ff6d24:#ffe524>Scroll Of Phoenix</gradient>"
+  lore:
+    - "&5Magic Scroll: &3Defense&7/&2Passive"
+    - "&7When used, all players within a &7%range% &7block radius will receive the &ePhoenix Covenant&7,"
+    - "&7restoring &a%hp% HP &7per second for &a%duration% &7seconds continuously."
+    - "&ePassive: &7Auto active when HP under &c%auto-active-hp%"
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  hp: 3
+  duration: 10
+  auto-active-hp: 6
+  cooldown: 60
+
+scroll_of_radiation:
+  enabled: true
+  name: "<gradient:#24ff41:#69ff24>Scroll Of Radiation</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense&7/&aActive"
+    - "&7When used, create a &aRadiation &7zone at the designated location."
+    - "&7All entities within the affected radius will be &2poisoned&7, while the"
+    - "&7durability of worn and held equipment will erode by &c%min% &7to &c%max% &7points"
+    - "&7every second."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  min: 1
+  max: 3
+  range: 5
+  cooldown: 60
+
+scroll_of_solar:
+  enabled: true
+  name: "<gradient:#fff675:#ff7930>Scroll Of Solar</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense&7/&3Defense&7/&aActive"
+    - "&7When used, burn all enemies within a &6%range% &7block radius, dealing &c%damage% HP &7burn"
+    - "&7damage and reducing durability by &c%point% &7point per second. Conversely,"
+    - "&7if used on yourself, gain &eLight Energy &7that restores &a%point% &7durability point"
+    - "&7per second for &a%duration% &7seconds, and receive resistance for the next &a%resistance% &7seconds"
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  damage: 2
+  point: 1
+  duration: 60
+  resistance: 200
+  cooldown: 5
+
+scroll_of_thunder:
+  enabled: true
+  name: "<gradient:#cc66ff:#6600cc>Scroll Of Thunder</gradient>"
+  lore:
+    - "&5Magic Scroll: &cOffense&7/&aActive"
+    - "&7When used, summon lightning at the designated location."
+    - "&7Within a &6%range% &7block radius, if a player is detected,"
+    - "&7after &c%delay% &7second, continuously strike them with &a%add% &7additional"
+    - "&7lightning bolts at their location."
+    - " "
+    - "&f► &eRight-Click &7to use."
+  craftable: true
+  range: 10
+  delay: 1
+  add: 5
+  cooldown: 5
