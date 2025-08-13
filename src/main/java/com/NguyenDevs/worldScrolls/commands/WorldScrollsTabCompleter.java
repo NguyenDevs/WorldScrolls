@@ -18,7 +18,7 @@ public class WorldScrollsTabCompleter implements TabCompleter {
     private final ConfigManager configManager;
     
     private final List<String> mainCommands = Arrays.asList(
-        "menu", "recipe", "admin", "give", "reload", "help"
+        "menu", "recipe", "admin", "give", "reload", "check", "help"
     );
     
     public WorldScrollsTabCompleter(WorldScrolls plugin) {
@@ -43,6 +43,7 @@ public class WorldScrollsTabCompleter implements TabCompleter {
                 case "recipe":
                 case "admin":
                 case "reload":
+                case "check":
                 case "help":
                     // These commands don't need additional arguments
                     return Collections.emptyList();
@@ -76,6 +77,10 @@ public class WorldScrollsTabCompleter implements TabCompleter {
         
         if (sender.hasPermission("worldscrolls.reload")) {
             availableCommands.add("reload");
+        }
+        
+        if (sender.hasPermission("worldscrolls.admin")) {
+            availableCommands.add("check");
         }
         
         // Filter based on what the user has typed so far

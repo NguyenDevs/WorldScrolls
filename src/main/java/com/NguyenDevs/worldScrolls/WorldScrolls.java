@@ -5,6 +5,7 @@ import com.NguyenDevs.worldScrolls.commands.WorldScrollsTabCompleter;
 import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.managers.GUIManager;
+import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
 import com.NguyenDevs.worldScrolls.utils.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -27,6 +28,9 @@ public final class WorldScrolls extends JavaPlugin {
         
         // Initialize GUIManager
         guiManager = new GUIManager(this);
+        
+        // Initialize ScrollUtils for WorldGuard integration
+        ScrollUtils.initialize(this);
         
         // Register additional event listeners
         registerEventListeners();

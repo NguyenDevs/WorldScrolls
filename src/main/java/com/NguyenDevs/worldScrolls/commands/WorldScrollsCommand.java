@@ -3,6 +3,7 @@ package com.NguyenDevs.worldScrolls.commands;
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
+import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -45,6 +46,8 @@ public class WorldScrollsCommand implements CommandExecutor {
                 return handleGiveCommand(sender, args);
             case "reload":
                 return handleReloadCommand(sender, args);
+            case "check":
+                return handleCheckCommand(sender, args);
             case "help":
                 sendHelpMessage(sender);
                 return true;
@@ -230,6 +233,30 @@ public class WorldScrollsCommand implements CommandExecutor {
     }
     
     /**
+     * Handle /wsc check command - show protection status
+     */
+    private boolean handleCheckCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("worldscrolls.admin")) {
+            sender.sendMessage(configManager.getMessage("no-permission"));
+            return true;
+        }
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(configManager.getMessage("player-only"));
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        String protectionInfo = ScrollUtils.getProtectionInfo(player);
+        
+        for (String line : protectionInfo.split("\n")) {
+            sender.sendMessage(ColorUtils.colorize(line));
+        }
+        
+        return true;
+    }
+    
+    /**
      * Send help message to command sender
      */
     private void sendHelpMessage(CommandSender sender) {
@@ -252,6 +279,9 @@ public class WorldScrollsCommand implements CommandExecutor {
             }
             if (sender.hasPermission("worldscrolls.reload")) {
                 sender.sendMessage(configManager.getMessage("command-help.reload"));
+            }
+            if (sender.hasPermission("worldscrolls.admin")) {
+                sender.sendMessage("&e/wsc check &7- Check scroll protection status");
             }
             sender.sendMessage("");
         }

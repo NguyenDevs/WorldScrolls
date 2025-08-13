@@ -16,3 +16,8 @@ command-help:
   give: "&e/wsc give &7- Give player a scroll"
   reload: "&e/wsc reload &7- Reload the plugin"
   footer: "&8&l=========================="
+
+# Scroll Protection Messages
+scroll-blocked-world: "&cScrolls are disabled in this world!"
+scroll-blocked-region: "&cYou cannot use scrolls in this protected region!"
+scroll-blocked-generic: "&cYou cannot use scrolls here!"
