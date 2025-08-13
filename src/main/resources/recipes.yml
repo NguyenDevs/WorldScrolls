@@ -1,0 +1,99 @@
+scroll_of_thorn:
+  recipe:
+    - "XPX"
+    - "PGP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    G: "OAK_SAPLING"
+
+scroll_of_cyclone:
+  recipe:
+    - "XPX"
+    - "PGP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    G: "GHAST_TEAR"
+
+scroll_of_exit:
+  recipe:
+    - "XPX"
+    - "PGP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    G: "OAK_SAPLING"
+
+scroll_of_frostbite:
+  recipe:
+    - "XPX"
+    - "PIP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    I: "BLUE_ICE"
+
+scroll_of_gravitation:
+  recipe:
+    - "XPX"
+    - "POP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    O: "OBSIDIAN"
+
+scroll_of_invisibility:
+  recipe:
+    - "XPX"
+    - "PFP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    F: "FERMENTED_SPIDER_EYE"
+
+scroll_of_meteor:
+  recipe:
+    - "XPX"
+    - "PBP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    B: "SOUL_SAND"
+
+scroll_of_phoenix:
+  recipe:
+    - "XPX"
+    - "PGP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    G: "GLISTERING_MELON_SLICE"
+
+scroll_of_radiation:
+  recipe:
+    - "XPX"
+    - "PSP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    S: "SPIDER_EYE"
+
+scroll_of_solar:
+  recipe:
+    - "XPX"
+    - "PGP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    G: "GLOWSTONE_DUST"
+
+scroll_of_thunder:
+  recipe:
+    - "XPX"
+    - "PLP"
+    - "XPX"
+  material:
+    P: "PAPER"
+    L: "LIGHTNING_ROD"
+
