@@ -1,9 +1,61 @@
 # General Messages
-prefix: "&7[&dWorld&5Scroll"
+prefix: "&7[&dWorld&5Scroll&7]"
 no-permission: "&cYou don't have permission to use this command!"
 plugin-reloaded: "&aConfiguration reloaded successfully!"
 player-only: "&cOnly players can use this command!"
 unknown-command: "&cUnknown command! Use &e/wsc &cto see the command list."
+full-item: "&aYour inventory was full, so the scroll was dropped at your feet!"
+receive: "&aYou received"
+give: "&aYou gave"
+scroll-disabled: "&cThis scroll is currently disabled!"
+
+# GUI
+admin-gui-title: "&cAdmin Panel &8- &7WorldScrolls"
+
+player-gui-title: "&dWorld&5Scrolls &8- &7Scroll Menu"
+player-gui-cooldown: "&6⏱ Cooldown: &e"
+player-gui-available: "&a✓ Available for use"
+player-gui-craftable: "&7Craftable: "
+player-gui-craftable-yes: "&aYes"
+player-gui-craftable-no: "&cNo"
+player-gui-view-recipe: "&e▶ Click to view recipe"
+
+recipe-gui-title: "&6Scroll Recipes"
+recipe-not-found: "&cRecipe Not Found"
+recipe-not-found-lore:
+  - "&7Recipe configuration for %scroll%"
+  - "&7is missing or invalid."
+  - "&7Please contact an administrator."
+recipe-item-lore:
+  - "&7Click to view crafting recipe"
+  - ""
+  - "&eScroll Type: &f%type%"
+  - "&eCraftable: %craftable%"
+  - ""
+  - "&6Required Materials:"
+  - "%materials%"
+
+recipe-book: "&6Recipe Book"
+recipe-book-lore:
+  - "&7View all scroll recipes"
+  - "&7and crafting information"
+reload-item-title: "&2Reload plugin"
+reload-item-lore:
+  - "&7Reload all configurations"
+  - "&7without restarting the server"
+  - "&eClick to reload"
+close: "&cClose"
+close-lore:
+  - "&7Click to close this menu"
+back: "&c← Back"
+back-lore:
+  - "&7Click to go back to previous menu"
+next-page: "&eNext Page →"
+next-page-lore:
+  - "&7Go to page"
+previous-page: "&e← Previous Page"
+previous-page-lore:
+  - "&7Go to page"
 
 # Command Help
 command-help:
