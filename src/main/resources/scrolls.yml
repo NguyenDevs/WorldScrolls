@@ -5,7 +5,7 @@ scroll_of_thorn:
     - "&5Magic Scroll: &cOffense"
     - "&7Creates a ring of &aSpikes &7at the designated location."
     - "&7All enemies in the area of effect are immobilized"
-    - "for &2%immobilize% &7seconds and poisoned for &2%poison% &7seconds."
+    - "&7for &2%immobilize% &7seconds and poisoned for &2%poison% &7seconds."
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
@@ -20,7 +20,7 @@ scroll_of_cyclone:
     - "&5Magic Scroll: &cOffense"
     - "&7Creates a &3Vortex of Pressure &7at designated location. Suck"
     - "&7all enemies into the center of the vortex. After &a%duration% &7seconds,"
-    - "they will be thrown up."
+    - "&7they will be thrown up."
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
@@ -61,9 +61,9 @@ scroll_of_gravitation:
   name: "<gradient:#3a3d3d:#96ffe7>Scroll Of Gravitation</gradient>"
   lore:
     - "&5Magic Scroll: &cOffense&7/&aActive"
-    - "&7All enemies within a &6%range% block &7radius will be &9&nPulled back &7to the"
+    - "&7All enemies within a &6%pull-range% block &7radius will be &9&nPulled back &7to the"
     - "&7designated location. Or will pull you towards the designated location."
-    - "&eMax distance: 20 block."
+    - "&eMax distance: %max-range% block."
     - " "
     - "&f► &eLeft-Click &7to pull back enemies to designated location."
     - "&f► &eRight-Click &7to pull you to designated location."
@@ -114,6 +114,7 @@ scroll_of_phoenix:
     - "&f► &eRight-Click &7to use."
   craftable: true
   hp: 3
+  range: 4
   duration: 10
   auto-active-hp: 6
   cooldown: 60
@@ -148,6 +149,7 @@ scroll_of_solar:
     - "&f► &eRight-Click &7to use."
   craftable: true
   damage: 2
+  range: 6
   point: 1
   duration: 60
   resistance: 200
