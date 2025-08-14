@@ -3,7 +3,7 @@ package com.NguyenDevs.worldScrolls;
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsCommand;
 import com.NguyenDevs.worldScrolls.commands.WorldScrollsTabCompleter;
 import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
-import com.NguyenDevs.worldScrolls.listeners.ScrollOfExit;
+import com.NguyenDevs.worldScrolls.listeners.scrolls.ScrollOfExit;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.managers.GUIManager;
 import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
@@ -39,11 +39,11 @@ public final class WorldScrolls extends JavaPlugin {
         // Register commands and tab completers
         registerCommands();
         
-        // Check for updates if enabled
+        /* Check for updates if enabled
         if (configManager.isUpdateNotifyEnabled()) {
             checkForUpdates();
         }
-        
+        */
         // Print startup message
         getLogger().info("WorldScrolls v" + getDescription().getVersion() + " has been enabled!");
         getLogger().info("Plugin developed by NguyenDevs");
@@ -92,7 +92,7 @@ public final class WorldScrolls extends JavaPlugin {
     
     /**
      * Check for plugin updates
-     */
+
     private void checkForUpdates() {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             try {
@@ -110,7 +110,7 @@ public final class WorldScrolls extends JavaPlugin {
             }
         });
     }
-    
+     */
     /**
      * Check if required dependencies are present
      */

@@ -1,4 +1,4 @@
-package com.NguyenDevs.worldScrolls.listeners;
+package com.NguyenDevs.worldScrolls.listeners.scrolls;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
