@@ -11,129 +11,114 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 public class PlayerGUI extends BaseGUI {
-    
+
     private final Map<UUID, Integer> currentPage = new HashMap<>();
     private final RecipeGUI recipeGUI;
-    
-    // Navigation slots
+
     private static final int CLOSE_SLOT = 44;
     private static final int PREV_PAGE_SLOT = 37;
     private static final int NEXT_PAGE_SLOT = 43;
     private static final int RECIPE_BOOK_SLOT = 40;
-    
-    public PlayerGUI(WorldScrolls plugin) {
+    private static final int SCROLL_START_SLOT = 10;
+
+    public PlayerGUI(WorldScrolls plugin, RecipeGUI recipeGUI) {
         super(plugin);
-        this.recipeGUI = new RecipeGUI(plugin);
+        this.recipeGUI = recipeGUI;
     }
-    
-    /**
-     * Open player scroll menu
-     */
+
     public void openScrollMenu(Player player) {
         currentPage.put(player.getUniqueId(), 0);
-        openGUI(player, "&d&lWorld&5&lScrolls &8- &7Scroll Menu");
+        openGUI(player, configManager.getMessage("player-gui-title"));
     }
-    
+
     @Override
     protected void fillContent(Inventory inventory, Player player) {
         List<String> availableScrolls = getAvailableScrolls();
         int page = currentPage.getOrDefault(player.getUniqueId(), 0);
-        int itemsPerPage = CONTENT_SLOTS.size() - 2; // Reserve slots for navigation
-        
+        int itemsPerPage = 28;
+
         int startIndex = page * itemsPerPage;
         int endIndex = Math.min(startIndex + itemsPerPage, availableScrolls.size());
-        
-        List<Integer> slots = getContentSlots();
-        int slotIndex = 0;
-        
-        // Add scroll items
-        for (int i = startIndex; i < endIndex && slotIndex < slots.size() - 2; i++) {
+
+        int currentSlot = SCROLL_START_SLOT;
+        for (int i = startIndex; i < endIndex; i++) {
             String scrollType = availableScrolls.get(i);
             ItemStack scrollItem = createScrollDisplayItem(scrollType, player);
-            inventory.setItem(slots.get(slotIndex), scrollItem);
-            slotIndex++;
+            inventory.setItem(currentSlot, scrollItem);
+
+            currentSlot++;
+            if (currentSlot % 9 == 8) {
+                currentSlot += 2;
+            }
+            if (currentSlot >= 37) break;
         }
-        
-        // Add page info if needed
+
         if (availableScrolls.size() > itemsPerPage) {
             ItemStack pageInfo = createItem(
-                Material.PAPER,
-                "&e&lPage " + (page + 1) + "/" + ((availableScrolls.size() - 1) / itemsPerPage + 1),
-                Arrays.asList(
-                    "&7Total scrolls: &e" + availableScrolls.size(),
-                    "&7Use arrows to navigate pages"
-                )
+                    Material.PAPER,
+                    "&ePage " + (page + 1) + "/" + ((availableScrolls.size() - 1) / itemsPerPage + 1),
+                    Arrays.asList(
+                            "&7Total scrolls: &e" + availableScrolls.size(),
+                            "&7Use arrows to navigate pages"
+                    )
             );
-            inventory.setItem(slots.get(slots.size() - 1), pageInfo);
+            inventory.setItem(31, pageInfo);
         }
-        
-        // Add navigation items
+
         addNavigationItems(inventory, player);
     }
-    
-    /**
-     * Add navigation items to inventory
-     */
+
     private void addNavigationItems(Inventory inventory, Player player) {
         List<String> availableScrolls = getAvailableScrolls();
         int page = currentPage.getOrDefault(player.getUniqueId(), 0);
-        int itemsPerPage = CONTENT_SLOTS.size() - 2;
-        int maxPages = (availableScrolls.size() - 1) / itemsPerPage + 1;
-        
-        // Previous page
+        int itemsPerPage = 28;
+        int maxPages = availableScrolls.size() > 0 ? (availableScrolls.size() - 1) / itemsPerPage + 1 : 1;
+
         if (page > 0) {
             ItemStack prevPage = createItem(
-                Material.ARROW,
-                "&e&l← Previous Page",
-                Arrays.asList("&7Go to page " + page)
+                    Material.ARROW,
+                    configManager.getMessage("next-page"),
+                    configManager.getMessages().getStringList("next-page-lore" + ": " + page)
             );
             inventory.setItem(PREV_PAGE_SLOT, prevPage);
         }
-        
-        // Next page
+
         if (page < maxPages - 1) {
             ItemStack nextPage = createItem(
-                Material.ARROW,
-                "&e&lNext Page →",
-                Arrays.asList("&7Go to page " + (page + 2))
+                    Material.ARROW,
+                    configManager.getMessage("previous-page"),
+                    configManager.getMessages().getStringList("previous-page-lore" + ": " + (page+2))
             );
             inventory.setItem(NEXT_PAGE_SLOT, nextPage);
         }
-        
-        // Recipe book
+
         ItemStack recipeBook = createItem(
-            Material.ENCHANTED_BOOK,
-            "&6&lRecipe Book",
-            Arrays.asList(
-                "&7Click to view all scroll recipes",
-                "&7and learn how to craft them"
-            )
+                Material.ENCHANTED_BOOK,
+                configManager.getMessage("recipe-book"),
+                configManager.getMessages().getStringList("recipe-book-lore")
         );
         inventory.setItem(RECIPE_BOOK_SLOT, recipeBook);
-        
-        // Close button
+
         inventory.setItem(CLOSE_SLOT, getCloseItem());
     }
-    
+
     @Override
     protected void handleClick(Player player, Inventory inventory, int slot, ItemStack clickedItem, boolean isRightClick) {
-        String identifier = "";
-        if (clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasLocalizedName()) {
-            identifier = clickedItem.getItemMeta().getLocalizedName();
-        }
-        
-        // Handle navigation
+        if (clickedItem == null || clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE) return;
+
         if (slot == CLOSE_SLOT) {
             player.closeInventory();
             return;
         }
-        
+
         if (slot == RECIPE_BOOK_SLOT) {
             player.closeInventory();
-            recipeGUI.openRecipeList(player);
+            recipeGUI.openFromPlayerMenu(player);
+
+            SoundUtils.playGUIClickSound(player);
             return;
         }
-        
+
         if (slot == PREV_PAGE_SLOT) {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
@@ -143,78 +128,111 @@ public class PlayerGUI extends BaseGUI {
             }
             return;
         }
-        
+
         if (slot == NEXT_PAGE_SLOT) {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
-            currentPage.put(player.getUniqueId(), currentPageNum + 1);
-            SoundUtils.playPageTurnSound(player);
-            openScrollMenu(player);
+            List<String> availableScrolls = getAvailableScrolls();
+            int itemsPerPage = 28;
+            int maxPages = availableScrolls.size() > 0 ? (availableScrolls.size() - 1) / itemsPerPage + 1 : 1;
+            if (currentPageNum < maxPages - 1) {
+                currentPage.put(player.getUniqueId(), currentPageNum + 1);
+                SoundUtils.playPageTurnSound(player);
+                openScrollMenu(player);
+            }
             return;
         }
-        
-        // Handle scroll selection (click to view recipe)
-        if (identifier.startsWith("scroll:")) {
-            String scrollType = identifier.replace("scroll:", "");
-            player.closeInventory();
-            recipeGUI.openScrollRecipe(player, scrollType);
+
+        if (isScrollDisplaySlot(slot)) {
+            String scrollType = getScrollTypeFromClick(player, slot, clickedItem);
+            if (scrollType != null) {
+                player.closeInventory();
+                recipeGUI.openScrollRecipeFromPlayer(player, scrollType);
+                SoundUtils.playGUIClickSound(player);
+            }
         }
     }
-    
-    /**
-     * Create scroll display item for player menu
-     */
+
+
+    private boolean isScrollDisplaySlot(int slot) {
+        if (slot < SCROLL_START_SLOT || slot >= 37) return false;
+
+        int row = slot / 9;
+        int col = slot % 9;
+        return col != 0 && col != 8;
+    }
+
+    private String getScrollTypeFromClick(Player player, int slot, ItemStack clickedItem) {
+        if (clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasLocalizedName()) {
+            String identifier = clickedItem.getItemMeta().getLocalizedName();
+            if (identifier.startsWith("scroll:")) {
+                return identifier.replace("scroll:", "");
+            }
+        }
+
+        List<String> availableScrolls = getAvailableScrolls();
+        int page = currentPage.getOrDefault(player.getUniqueId(), 0);
+        int itemsPerPage = 28;
+
+        int itemIndex = getItemIndexFromSlot(slot) + (page * itemsPerPage);
+
+        if (itemIndex >= 0 && itemIndex < availableScrolls.size()) {
+            return availableScrolls.get(itemIndex);
+        }
+
+        return null;
+    }
+
+    private int getItemIndexFromSlot(int slot) {
+        int row = (slot / 9) - 1;
+        int col = (slot % 9) - 1;
+
+        if (row < 0 || row > 2 || col < 0 || col > 6) return -1;
+
+        return row * 7 + col;
+    }
+
     private ItemStack createScrollDisplayItem(String scrollType, Player player) {
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
         if (scrollConfig == null) return new ItemStack(Material.PAPER);
-        
+
         List<String> lore = new ArrayList<>();
-        
-        // Add scroll description from config
+
         List<String> originalLore = scrollConfig.getStringList("lore");
         for (String line : originalLore) {
-            // Replace placeholders with actual values
             String processedLine = replacePlaceholders(line, scrollConfig);
             lore.add(processedLine);
         }
-        
+
         lore.add("");
-        
-        // Add cooldown information
+
         int cooldownSeconds = scrollConfig.getInt("cooldown", 0);
         if (cooldownSeconds > 0) {
             String cooldownText = formatCooldown(cooldownSeconds);
-            lore.add("&6⏱ Cooldown: &e" + cooldownText);
+            lore.add(configManager.getMessage("player-gui-cooldown") + cooldownText);
         } else {
-            lore.add("&6⏱ Cooldown: &aNone");
+            lore.add(configManager.getMessage("player-gui-cooldown") + "None");
         }
-        
-        // Add usage statistics (if available)
-        // TODO: This would connect to a cooldown/usage manager later
-        lore.add("&a✓ Available for use");
-        
+
+        lore.add(configManager.getMessage("player-gui-available"));
+
         lore.add("");
-        
-        // Add craftable status
+
         boolean craftable = scrollConfig.getBoolean("craftable", true);
-        lore.add("&7Craftable: " + (craftable ? "&aYes" : "&cNo"));
-        
+        lore.add(configManager.getMessage("player-gui-craftable") + (craftable ? configManager.getMessage("player-gui-craftable-yes") : configManager.getMessage("player-gui-craftable-no")));
+
         lore.add("");
-        lore.add("&e▶ Click to view recipe");
-        
-        // Get scroll category/type for icon
+        lore.add(configManager.getMessage("player-gui-view-recipe"));
+
         Material iconMaterial = getScrollIcon(scrollType);
-        
+
         return createItem(
-            iconMaterial,
-            scrollConfig.getString("name", scrollType),
-            lore,
-            "scroll:" + scrollType
+                iconMaterial,
+                scrollConfig.getString("name", scrollType),
+                lore,
+                "scroll:" + scrollType
         );
     }
-    
-    /**
-     * Get appropriate icon material for scroll type
-     */
+
     private Material getScrollIcon(String scrollType) {
         switch (scrollType.toLowerCase()) {
             case "scroll_of_thorn":
@@ -243,10 +261,7 @@ public class PlayerGUI extends BaseGUI {
                 return Material.PAPER;
         }
     }
-    
-    /**
-     * Format cooldown time into readable string
-     */
+
     private String formatCooldown(int seconds) {
         if (seconds < 60) {
             return seconds + " second" + (seconds != 1 ? "s" : "");
@@ -268,14 +283,10 @@ public class PlayerGUI extends BaseGUI {
             }
         }
     }
-    
-    /**
-     * Replace placeholders in text with config values
-     */
+
     private String replacePlaceholders(String text, ConfigurationSection config) {
         String result = text;
-        
-        // Replace all config values that might be used as placeholders
+
         for (String key : config.getKeys(false)) {
             if (!key.equals("name") && !key.equals("lore") && !key.equals("enabled") && !key.equals("craftable")) {
                 Object value = config.get(key);
@@ -284,17 +295,14 @@ public class PlayerGUI extends BaseGUI {
                 }
             }
         }
-        
+
         return result;
     }
-    
-    /**
-     * Get all available scroll types
-     */
+
     private List<String> getAvailableScrolls() {
         List<String> scrolls = new ArrayList<>();
         ConfigurationSection scrollsConfig = configManager.getScrolls();
-        
+
         if (scrollsConfig != null) {
             for (String scrollType : scrollsConfig.getKeys(false)) {
                 ConfigurationSection scrollConfig = scrollsConfig.getConfigurationSection(scrollType);
@@ -303,24 +311,11 @@ public class PlayerGUI extends BaseGUI {
                 }
             }
         }
-        
-        // Sort scrolls by category/type for better organization
-        scrolls.sort((a, b) -> {
-            String categoryA = getScrollCategory(a);
-            String categoryB = getScrollCategory(b);
-            
-            if (!categoryA.equals(categoryB)) {
-                return categoryA.compareTo(categoryB);
-            }
-            return a.compareTo(b);
-        });
-        
+
+        scrolls.sort(String.CASE_INSENSITIVE_ORDER);
         return scrolls;
     }
-    
-    /**
-     * Get scroll category for sorting
-     */
+
     private String getScrollCategory(String scrollType) {
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
         if (scrollConfig != null) {
@@ -335,14 +330,11 @@ public class PlayerGUI extends BaseGUI {
         }
         return "5_other";
     }
-    
-    /**
-     * Get the recipe GUI instance for integration
-     */
+
     public RecipeGUI getRecipeGUI() {
         return recipeGUI;
     }
-    
+
     @Override
     public void closeGUI(Player player) {
         super.closeGUI(player);

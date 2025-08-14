@@ -3,9 +3,9 @@ package com.NguyenDevs.worldScrolls.commands;
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
-import com.NguyenDevs.worldScrolls.utils.ScrollUtils;
 import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -47,8 +47,6 @@ public class WorldScrollsCommand implements CommandExecutor {
                 return handleGiveCommand(sender, args);
             case "reload":
                 return handleReloadCommand(sender, args);
-            case "check":
-                return handleCheckCommand(sender, args);
             case "help":
                 sendHelpMessage(sender);
                 return true;
@@ -57,59 +55,46 @@ public class WorldScrollsCommand implements CommandExecutor {
                 return true;
         }
     }
-    
-    /**
-     * Handle /wsc menu command
-     */
+
     private boolean handleMenuCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(configManager.getMessage("player-only"));
+            sender.sendMessage("&7[&dWorld&5Scroll&7]" + " " + configManager.getMessage("player-only"));
             return true;
         }
-        
+
         Player player = (Player) sender;
-        
-        // Check if world is disabled
+
         if (configManager.isWorldDisabled(player.getWorld().getName())) {
-            player.sendMessage(ColorUtils.colorize("&cWorldScrolls is disabled in this world!"));
+            player.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("scroll-blocked-world")));
             return true;
         }
-        
-        // Open player GUI
+
         plugin.getGUIManager().openPlayerMenu(player);
         
         return true;
     }
-    
-    /**
-     * Handle /wsc recipe command
-     */
+
     private boolean handleRecipeCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(configManager.getMessage("player-only"));
+            sender.sendMessage("&7[&dWorld&5Scroll&7]" + " " + configManager.getMessage("player-only"));
             return true;
         }
         
         Player player = (Player) sender;
-        
-        // Check if world is disabled
+
         if (configManager.isWorldDisabled(player.getWorld().getName())) {
-            player.sendMessage(ColorUtils.colorize("&cWorldScrolls is disabled in this world!"));
+            player.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("scroll-blocked-world")));
             return true;
         }
-        
-        // Open recipe GUI
+
         plugin.getGUIManager().openRecipeBook(player);
         
         return true;
     }
-    
-    /**
-     * Handle /wsc admin command
-     */
+
     private boolean handleAdminCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.admin")) {
-            sender.sendMessage(configManager.getMessage("no-permission"));
+            sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
             if (sender instanceof Player) {
                 SoundUtils.playPermissionDeniedSound((Player) sender);
             }
@@ -117,24 +102,20 @@ public class WorldScrollsCommand implements CommandExecutor {
         }
         
         if (!(sender instanceof Player)) {
-            sender.sendMessage(configManager.getMessage("player-only"));
+            sender.sendMessage("&7[&dWorld&5Scroll&7]" + " " + configManager.getMessage("player-only"));
             return true;
         }
         
         Player player = (Player) sender;
-        
-        // Open admin GUI
+
         plugin.getGUIManager().openAdminPanel(player);
         
         return true;
     }
-    
-    /**
-     * Handle /wsc give command
-     */
+
     private boolean handleGiveCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.give")) {
-            sender.sendMessage(configManager.getMessage("no-permission"));
+            sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
             if (sender instanceof Player) {
                 SoundUtils.playPermissionDeniedSound((Player) sender);
             }
@@ -142,10 +123,9 @@ public class WorldScrollsCommand implements CommandExecutor {
         }
         
         if (args.length < 3) {
-            sender.sendMessage(ColorUtils.colorize("&cUsage: /wsc give <player> <scroll> [amount]"));
-            sender.sendMessage(ColorUtils.colorize("&7Available scrolls:"));
-            
-            // List available scrolls
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cUsage: /wsc give <player> <scroll> [amount]"));
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&7Available scrolls:"));
+
             ConfigurationSection scrolls = configManager.getScrolls();
             if (scrolls != null) {
                 for (String scrollKey : scrolls.getKeys(false)) {
@@ -165,40 +145,37 @@ public class WorldScrollsCommand implements CommandExecutor {
             try {
                 amount = Integer.parseInt(args[3]);
                 if (amount <= 0 || amount > 64) {
-                    sender.sendMessage(ColorUtils.colorize("&cAmount must be between 1 and 64!"));
+                    sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cAmount must be between 1 and 64!"));
                     return true;
                 }
             } catch (NumberFormatException e) {
-                sender.sendMessage(ColorUtils.colorize("&cInvalid amount! Please enter a valid number."));
+                sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cInvalid amount! Please enter a valid number."));
                 return true;
             }
         }
         
         Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
         if (targetPlayer == null) {
-            sender.sendMessage(ColorUtils.colorize("&cPlayer not found: " + targetPlayerName));
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cPlayer not found: " + targetPlayerName));
             return true;
         }
-        
-        // Check if scroll exists and is enabled
+
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
         if (scrollConfig == null) {
-            sender.sendMessage(ColorUtils.colorize("&cScroll not found: " + scrollType));
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cScroll not found: " + scrollType));
             return true;
         }
         
         if (!scrollConfig.getBoolean("enabled", true)) {
-            sender.sendMessage(ColorUtils.colorize("&cScroll is disabled: " + scrollType));
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cScroll is disabled: " + scrollType));
             return true;
         }
-        
-        // Create and give the scroll item
+
         ItemStack scrollItem = createScrollItem(scrollType, scrollConfig, amount);
         if (scrollItem != null) {
-            // Check if player has inventory space
             if (targetPlayer.getInventory().firstEmpty() == -1) {
                 targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), scrollItem);
-                targetPlayer.sendMessage(ColorUtils.colorize("&aYour inventory was full, so the scroll was dropped at your feet!"));
+                targetPlayer.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("full-item")));
             } else {
                 targetPlayer.getInventory().addItem(scrollItem);
             }
@@ -208,27 +185,23 @@ public class WorldScrollsCommand implements CommandExecutor {
             placeholders.put("scroll", scrollConfig.getString("name", scrollType));
             placeholders.put("player", targetPlayer.getName());
             
-            targetPlayer.sendMessage(ColorUtils.colorize("&aYou received " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a!"));
-            sender.sendMessage(ColorUtils.colorize("&aGave " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a to " + targetPlayer.getName() + "!"));
-            
-            // Play success sounds
+            targetPlayer.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("receive") + ": " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a!"));
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " +  configManager.getMessage("give") + ": " +  targetPlayer.getName() + " " + amount + "x " + scrollConfig.getString("name", scrollType) + "!"));
+
             SoundUtils.playSuccessSound(targetPlayer);
             if (sender instanceof Player && !sender.equals(targetPlayer)) {
                 SoundUtils.playSuccessSound((Player) sender);
             }
         } else {
-            sender.sendMessage(ColorUtils.colorize("&cFailed to create scroll item!"));
+            sender.sendMessage(ColorUtils.colorize("&7[&dWorld&5Scroll&7]" + " " + "&cFailed to create scroll item!"));
         }
         
         return true;
     }
-    
-    /**
-     * Handle /wsc reload command
-     */
+
     private boolean handleReloadCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.reload")) {
-            sender.sendMessage(configManager.getMessage("no-permission"));
+            sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
             if (sender instanceof Player) {
                 SoundUtils.playPermissionDeniedSound((Player) sender);
             }
@@ -237,19 +210,16 @@ public class WorldScrollsCommand implements CommandExecutor {
         
         try {
             configManager.reloadConfigs();
-            sender.sendMessage(configManager.getMessage("plugin-reloaded"));
-            plugin.getLogger().info("Plugin reloaded by " + sender.getName());
-            
-            // Play reload sound
+            sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("plugin-reloaded"));
+
             if (sender instanceof Player) {
                 SoundUtils.playReloadSound((Player) sender);
             }
         } catch (Exception e) {
-            sender.sendMessage(ColorUtils.colorize("&cFailed to reload plugin! Check console for errors."));
-            plugin.getLogger().severe("Failed to reload plugin: " + e.getMessage());
+            sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cFailed to reload plugin! Check console for errors."));
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to reload plugin: " + e.getMessage()));
             e.printStackTrace();
-            
-            // Play error sound
+
             if (sender instanceof Player) {
                 SoundUtils.playErrorSound((Player) sender);
             }
@@ -257,37 +227,7 @@ public class WorldScrollsCommand implements CommandExecutor {
         
         return true;
     }
-    
-    /**
-     * Handle /wsc check command - show protection status
-     */
-    private boolean handleCheckCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("worldscrolls.admin")) {
-            sender.sendMessage(configManager.getMessage("no-permission"));
-            if (sender instanceof Player) {
-                SoundUtils.playPermissionDeniedSound((Player) sender);
-            }
-            return true;
-        }
-        
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(configManager.getMessage("player-only"));
-            return true;
-        }
-        
-        Player player = (Player) sender;
-        String protectionInfo = ScrollUtils.getProtectionInfo(player);
-        
-        for (String line : protectionInfo.split("\n")) {
-            sender.sendMessage(ColorUtils.colorize(line));
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Send help message to command sender
-     */
+
     private void sendHelpMessage(CommandSender sender) {
         sender.sendMessage(configManager.getMessage("command-help.header"));
         sender.sendMessage("");
@@ -317,34 +257,26 @@ public class WorldScrollsCommand implements CommandExecutor {
         
         sender.sendMessage(configManager.getMessage("command-help.footer"));
     }
-    
-    /**
-     * Create a scroll item with proper meta
-     */
+
     private ItemStack createScrollItem(String scrollType, ConfigurationSection scrollConfig, int amount) {
         try {
             ItemStack item = new ItemStack(Material.PAPER, amount);
             ItemMeta meta = item.getItemMeta();
             
             if (meta != null) {
-                // Set display name
                 String name = scrollConfig.getString("name", scrollType);
                 meta.setDisplayName(ColorUtils.colorize(name));
-                
-                // Set lore
+
                 List<String> lore = scrollConfig.getStringList("lore");
                 if (!lore.isEmpty()) {
                     List<String> colorizedLore = new ArrayList<>();
                     for (String line : lore) {
-                        // Replace placeholders in lore
                         String processedLine = replacePlaceholders(line, scrollConfig);
                         colorizedLore.add(ColorUtils.colorize(processedLine));
                     }
                     meta.setLore(colorizedLore);
                 }
-                
-                // Add custom model data or other identifiers if needed
-                // This helps identify the scroll type later
+
                 meta.setLocalizedName("worldscrolls:" + scrollType);
                 
                 item.setItemMeta(meta);
@@ -352,19 +284,15 @@ public class WorldScrollsCommand implements CommandExecutor {
             
             return item;
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to create scroll item for: " + scrollType);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to create scroll item for: " + scrollType));
             e.printStackTrace();
             return null;
         }
     }
-    
-    /**
-     * Replace placeholders in text with config values
-     */
+
     private String replacePlaceholders(String text, ConfigurationSection config) {
         String result = text;
-        
-        // Replace all config values that might be used as placeholders
+
         for (String key : config.getKeys(false)) {
             if (!key.equals("name") && !key.equals("lore") && !key.equals("enabled") && !key.equals("craftable")) {
                 Object value = config.get(key);

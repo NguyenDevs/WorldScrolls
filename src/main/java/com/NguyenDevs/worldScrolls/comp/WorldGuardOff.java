@@ -1,42 +1,31 @@
 package com.NguyenDevs.worldScrolls.comp;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-public class WorldGuardOff {
-    
-    /**
-     * Fallback when WorldGuard is not available - always allow scrolls
-     * @param player The player
-     * @return always true (no region protection)
-     */
-    public boolean canUseScrolls(Player player) {
+public class WorldGuardOff implements WGPlugin {
+
+    @Override
+    public boolean isPvpAllowed(Location location) {
+        if (location == null) {
+            throw new IllegalArgumentException("Location cannot be null");
+        }
         return true;
     }
-    
-    /**
-     * Fallback location check when WorldGuard is not available
-     * @param player The player
-     * @param location The location to check
-     * @return always true (no region protection)
-     */
-    public boolean canUseScrollsAt(Player player, org.bukkit.Location location) {
+
+    @Override
+    public boolean isFlagAllowed(Player player, String flag) {
+        if (player == null) {
+            throw new IllegalArgumentException("Player cannot be null");
+        }
         return true;
     }
-    
-    /**
-     * Get message when WorldGuard is not available
-     * @param player The player
-     * @return Empty string (no blocking)
-     */
-    public String getBlockedMessage(Player player) {
-        return "";
-    }
-    
-    /**
-     * Check if WorldGuard integration is working
-     * @return always false (no WorldGuard)
-     */
-    public boolean isIntegrationWorking() {
-        return false;
+
+    @Override
+    public boolean isFlagAllowedAtLocation(Location location, String flag) {
+        if (location == null) {
+            throw new IllegalArgumentException("Location cannot be null");
+        }
+        return true;
     }
 }
