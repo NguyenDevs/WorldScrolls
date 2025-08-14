@@ -99,7 +99,7 @@ scroll_of_meteor:
   craftable: true
   min: 1
   max: 5
-  damage: 20
+  damage: 15
   cooldown: 120
 
 scroll_of_phoenix:

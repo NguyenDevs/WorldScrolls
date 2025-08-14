@@ -1,8 +1,8 @@
 package com.NguyenDevs.worldScrolls.guis;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
-import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -115,7 +115,7 @@ public class PlayerGUI extends BaseGUI {
             player.closeInventory();
             recipeGUI.openFromPlayerMenu(player);
 
-            SoundUtils.playGUIClickSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
             return;
         }
 
@@ -123,7 +123,7 @@ public class PlayerGUI extends BaseGUI {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
                 currentPage.put(player.getUniqueId(), currentPageNum - 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openScrollMenu(player);
             }
             return;
@@ -136,7 +136,7 @@ public class PlayerGUI extends BaseGUI {
             int maxPages = availableScrolls.size() > 0 ? (availableScrolls.size() - 1) / itemsPerPage + 1 : 1;
             if (currentPageNum < maxPages - 1) {
                 currentPage.put(player.getUniqueId(), currentPageNum + 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openScrollMenu(player);
             }
             return;
@@ -147,7 +147,7 @@ public class PlayerGUI extends BaseGUI {
             if (scrollType != null) {
                 player.closeInventory();
                 recipeGUI.openScrollRecipeFromPlayer(player, scrollType);
-                SoundUtils.playGUIClickSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
             }
         }
     }
@@ -237,7 +237,7 @@ public class PlayerGUI extends BaseGUI {
         switch (scrollType.toLowerCase()) {
             case "scroll_of_thorn":
                 return Material.CACTUS;
-            case "scroll_of_cyclone":
+            case "scroll_of_cyclone.yml":
                 return Material.GHAST_TEAR;
             case "scroll_of_exit":
                 return Material.ENDER_PEARL;

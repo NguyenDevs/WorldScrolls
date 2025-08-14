@@ -19,11 +19,11 @@ scroll_of_cyclone:
 scroll_of_exit:
   recipe:
     - "XPX"
-    - "PGP"
+    - "PEP"
     - "XPX"
   material:
     P: "PAPER"
-    G: "OAK_SAPLING"
+    E: "ENDER_PEARL"  # Sửa từ G thành E
 
 scroll_of_frostbite:
   recipe:
@@ -96,4 +96,3 @@ scroll_of_thunder:
   material:
     P: "PAPER"
     L: "LIGHTNING_ROD"
-

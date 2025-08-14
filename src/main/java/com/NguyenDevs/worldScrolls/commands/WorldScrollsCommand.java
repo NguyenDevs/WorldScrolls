@@ -2,11 +2,9 @@ package com.NguyenDevs.worldScrolls.commands;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
+import com.NguyenDevs.worldScrolls.managers.RecipeManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
-import com.NguyenDevs.worldScrolls.utils.SoundUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,6 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -21,16 +20,21 @@ public class WorldScrollsCommand implements CommandExecutor {
     
     private final WorldScrolls plugin;
     private final ConfigManager configManager;
+    private final RecipeManager recipeManager;
     
     public WorldScrollsCommand(WorldScrolls plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
+        this.recipeManager = plugin.getRecipeManager();
     }
     
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             sendHelpMessage(sender);
+            if(sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.1f);
+            }
             return true;
         }
         
@@ -70,7 +74,7 @@ public class WorldScrollsCommand implements CommandExecutor {
         }
 
         plugin.getGUIManager().openPlayerMenu(player);
-        
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 0.8f);
         return true;
     }
 
@@ -88,15 +92,15 @@ public class WorldScrollsCommand implements CommandExecutor {
         }
 
         plugin.getGUIManager().openRecipeBook(player);
-        
+        player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 1.0f, 0.8f);
         return true;
     }
 
     private boolean handleAdminCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.admin")) {
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
-            if (sender instanceof Player) {
-                SoundUtils.playPermissionDeniedSound((Player) sender);
+            if (sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
             }
             return true;
         }
@@ -109,15 +113,15 @@ public class WorldScrollsCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         plugin.getGUIManager().openAdminPanel(player);
-        
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 0.8f);
         return true;
     }
 
     private boolean handleGiveCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.give")) {
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
-            if (sender instanceof Player) {
-                SoundUtils.playPermissionDeniedSound((Player) sender);
+            if (sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
             }
             return true;
         }
@@ -188,9 +192,9 @@ public class WorldScrollsCommand implements CommandExecutor {
             targetPlayer.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("receive") + ": " + amount + "x " + scrollConfig.getString("name", scrollType) + "&a!"));
             sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " +  configManager.getMessage("give") + ": " +  targetPlayer.getName() + " " + amount + "x " + scrollConfig.getString("name", scrollType) + "!"));
 
-            SoundUtils.playSuccessSound(targetPlayer);
+            targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.3f);
             if (sender instanceof Player && !sender.equals(targetPlayer)) {
-                SoundUtils.playSuccessSound((Player) sender);
+                targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.3f);
             }
         } else {
             sender.sendMessage(ColorUtils.colorize("&7[&dWorld&5Scroll&7]" + " " + "&cFailed to create scroll item!"));
@@ -202,26 +206,27 @@ public class WorldScrollsCommand implements CommandExecutor {
     private boolean handleReloadCommand(CommandSender sender, String[] args) {
         if (!sender.hasPermission("worldscrolls.reload")) {
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("no-permission"));
-            if (sender instanceof Player) {
-                SoundUtils.playPermissionDeniedSound((Player) sender);
+            if (sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
             }
             return true;
         }
         
         try {
             configManager.reloadConfigs();
+            recipeManager.loadRecipes();
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("plugin-reloaded"));
 
-            if (sender instanceof Player) {
-                SoundUtils.playReloadSound((Player) sender);
+            if (sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.0f);
             }
         } catch (Exception e) {
             sender.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cFailed to reload plugin! Check console for errors."));
             Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to reload plugin: " + e.getMessage()));
             e.printStackTrace();
 
-            if (sender instanceof Player) {
-                SoundUtils.playErrorSound((Player) sender);
+            if (sender instanceof Player player) {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
             }
         }
         
@@ -249,9 +254,6 @@ public class WorldScrollsCommand implements CommandExecutor {
             if (sender.hasPermission("worldscrolls.reload")) {
                 sender.sendMessage(configManager.getMessage("command-help.reload"));
             }
-            if (sender.hasPermission("worldscrolls.admin")) {
-                sender.sendMessage("&e/wsc check &7- Check scroll protection status");
-            }
             sender.sendMessage("");
         }
         
@@ -262,7 +264,7 @@ public class WorldScrollsCommand implements CommandExecutor {
         try {
             ItemStack item = new ItemStack(Material.PAPER, amount);
             ItemMeta meta = item.getItemMeta();
-            
+
             if (meta != null) {
                 String name = scrollConfig.getString("name", scrollType);
                 meta.setDisplayName(ColorUtils.colorize(name));
@@ -278,17 +280,25 @@ public class WorldScrollsCommand implements CommandExecutor {
                 }
 
                 meta.setLocalizedName("worldscrolls:" + scrollType);
-                
+
+                meta.getPersistentDataContainer().set(
+                        new NamespacedKey(plugin, "scroll_type"),
+                        PersistentDataType.STRING,
+                        scrollType
+                );
+
                 item.setItemMeta(meta);
             }
-            
+
             return item;
         } catch (Exception e) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to create scroll item for: " + scrollType));
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&',
+                    "&7[&dWorld&5Scroll&7] &cFailed to create scroll item for: " + scrollType));
             e.printStackTrace();
             return null;
         }
     }
+
 
     private String replacePlaceholders(String text, ConfigurationSection config) {
         String result = text;

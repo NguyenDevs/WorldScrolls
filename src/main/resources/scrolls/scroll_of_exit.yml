@@ -1,0 +1,10 @@
+messages:
+  prefix: "&7[<gradient:#7d7675:#e48aff>Scroll Of Exit</gradient>&7]"
+  on-cooldown: "&cYou need to wait %remaining% seconds to use this Scroll!"
+  save-already-locked: "&cThis scroll's location is already locked!"
+  drop-on-ground: "&eThe exit scroll has been dropped at your feet (inventory full)."
+  saved-location: "&aExit point saved at: &e%world% (%x%, %y%, %z%)"
+  no-location: "&cThis scroll has no saved exit point! Left-click to save a location first."
+  prepare-teleport: "&ePreparing to teleport... Do not move!"
+  teleport-cancelled: "&cTeleport cancelled because you moved."
+  teleported: "&aTeleported to: &e%world% (%x%, %y%, %z%)"

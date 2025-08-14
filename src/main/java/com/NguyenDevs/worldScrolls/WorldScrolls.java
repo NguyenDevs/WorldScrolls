@@ -8,6 +8,7 @@ import com.NguyenDevs.worldScrolls.comp.WorldGuardOn;
 import com.NguyenDevs.worldScrolls.guis.PlayerGUI;
 import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
 import com.NguyenDevs.worldScrolls.listeners.scrolls.ScrollOfExit;
+import com.NguyenDevs.worldScrolls.listeners.scrolls.ScrollOfMeteor;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.managers.GUIManager;
 import com.NguyenDevs.worldScrolls.managers.RecipeManager;
@@ -48,8 +49,8 @@ public final class WorldScrolls extends JavaPlugin {
         configManager = new ConfigManager(this);
         configManager.initializeConfigs();
         recipeManager = new RecipeManager(this);
+        recipeManager.loadRecipes();
         guiManager = new GUIManager(this);
-
         registerEventListeners();
 
         registerCommands();
@@ -74,7 +75,7 @@ public final class WorldScrolls extends JavaPlugin {
     private void registerEventListeners() {
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         Bukkit.getPluginManager().registerEvents(new ScrollOfExit(this), this);
-        getLogger().info("Additional event listeners registered successfully!");
+        Bukkit.getPluginManager().registerEvents(new ScrollOfMeteor(this), this);
     }
     
     private void registerCommands() {
@@ -85,33 +86,25 @@ public final class WorldScrolls extends JavaPlugin {
             
             mainCommand.setExecutor(commandExecutor);
             mainCommand.setTabCompleter(tabCompleter);
-            
-            getLogger().info("Commands registered successfully!");
+
         } else {
             getLogger().severe("Failed to register main command! Check plugin.yml");
         }
     }
     
     private void checkDependencies() {
-        if (Bukkit.getPluginManager().getPlugin("WorldGuard") == null) {
-            getLogger().warning("WorldGuard not found! Some features may not work properly.");
-        } else {
-            getLogger().info("WorldGuard integration enabled!");
-        }
-        
         if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-            getLogger().warning("ProtocolLib not found! Some visual effects may not work properly.");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cProtocolLib not found! Some visual effects may not work properly!"));
         } else {
-            getLogger().info("ProtocolLib integration enabled!");
-        }
-        
-        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            getLogger().info("PlaceholderAPI integration enabled!");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aProtocolLib integration enabled!"));
         }
     }
     
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+    public RecipeManager getRecipeManager() {
+        return recipeManager;
     }
     
     public GUIManager getGUIManager() {
@@ -120,13 +113,6 @@ public final class WorldScrolls extends JavaPlugin {
 
     public static WorldScrolls getInstance() {
         return instance;
-    }
-    
-    public void reloadPlugin() {
-        if (configManager != null) {
-            configManager.reloadConfigs();
-        }
-        getLogger().info("Plugin reloaded successfully!");
     }
 
 
@@ -145,9 +131,10 @@ public final class WorldScrolls extends JavaPlugin {
             
 
         } catch (FlagConflictException e) {
-            getLogger().warning("Flag conflict while registering WorldGuard flags: " + e.getMessage());
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFlag conflict while registering WorldGuard flags: " + e.getMessage()));
+
         } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Unexpected error while registering WorldGuard flags", e);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cUnexpected error while registering WorldGuard flags") + e.getMessage());
         }
     }
 

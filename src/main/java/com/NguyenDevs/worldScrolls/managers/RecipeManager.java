@@ -1,7 +1,9 @@
 package com.NguyenDevs.worldScrolls.managers;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
+import com.NguyenDevs.worldScrolls.utils.ColorUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -9,6 +11,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -52,50 +55,109 @@ public class RecipeManager {
             recipeHashes.remove(removed);
         }
 
-        plugin.getLogger().info("Recipes loaded. Total: " + registeredRecipes.size());
+        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aRecipes loaded. Total: " + registeredRecipes.size()));
     }
 
     private void registerRecipe(String scrollId, ConfigurationSection recipeData, ConfigurationSection scrollData) {
         List<String> shape = recipeData.getStringList("recipe");
         if (shape.size() != 3) {
-            plugin.getLogger().warning("Invalid recipe shape for " + scrollId);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cInvalid recipe shape for " + scrollId));
             return;
+        }
+
+        // Check row length in recipe
+        for (String row : shape) {
+            if (row.length() != 3) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cInvalid recipe row length for " + scrollId + ": " + row));
+                return;
+            }
         }
 
         ItemStack result = createScrollItem(scrollId, scrollData);
         if (result == null) {
-            plugin.getLogger().warning("Failed to create scroll item for " + scrollId);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to create scroll item for " + scrollId));
             return;
         }
 
         NamespacedKey key = new NamespacedKey(plugin, scrollId + "_recipe");
+
+        // Remove old recipe if it exists
+        try {
+            Bukkit.removeRecipe(key);
+        } catch (Exception ignored) {}
+
         ShapedRecipe recipe = new ShapedRecipe(key, result);
         recipe.shape(shape.get(0), shape.get(1), shape.get(2));
 
         ConfigurationSection materialSection = recipeData.getConfigurationSection("material");
         if (materialSection != null) {
-            for (String symbol : materialSection.getKeys(false)) {
-                String matName = materialSection.getString(symbol);
-                if (matName == null || matName.equalsIgnoreCase("X")) continue;
-                Material mat = Material.getMaterial(matName.toUpperCase());
-                if (mat == null) {
-                    plugin.getLogger().warning("Invalid material for " + scrollId + ": " + matName);
+            // Track used characters in recipe
+            Set<Character> usedChars = new HashSet<>();
+            for (String row : shape) {
+                for (char c : row.toCharArray()) {
+                    if (c != 'X') {
+                        usedChars.add(c);
+                    }
+                }
+            }
+
+            for (Map.Entry<String, Object> entry : materialSection.getValues(false).entrySet()) {
+                String symbol = entry.getKey();
+                String matName = (String) entry.getValue();
+
+                if (symbol.length() != 1) {
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cInvalid symbol length for " + scrollId + ": " + symbol));
                     continue;
                 }
-                recipe.setIngredient(symbol.charAt(0), mat);
+
+                char symbolChar = symbol.charAt(0);
+
+                if (matName == null || matName.equalsIgnoreCase("X")) continue;
+
+                // Only set ingredient for characters used in recipe
+                if (!usedChars.contains(symbolChar)) {
+                    continue;
+                }
+
+                Material mat = Material.getMaterial(matName.toUpperCase());
+                if (mat == null) {
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cInvalid material for " + scrollId + ": " + matName));
+                    continue;
+                }
+
+                try {
+                    recipe.setIngredient(symbolChar, mat);
+                    } catch (Exception e) {
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to set ingredient " + symbolChar + " for " + scrollId + ": " + e.getMessage()));
+                    return;
+                }
             }
         }
 
-        Bukkit.addRecipe(recipe);
-        registeredRecipes.put(scrollId, recipe);
-        plugin.getLogger().info("Registered recipe for " + scrollId);
+        try {
+            boolean added = Bukkit.addRecipe(recipe);
+            if (added) {
+                registeredRecipes.put(scrollId, recipe);
+                } else {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to add recipe for " + scrollId));
+            }
+        } catch (Exception e) {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cException while adding recipe for " + scrollId + ": " + e.getMessage()));
+            e.printStackTrace();
+        }
     }
 
     private void unregisterRecipe(String scrollId) {
         ShapedRecipe recipe = registeredRecipes.remove(scrollId);
         if (recipe != null) {
-            Bukkit.removeRecipe(recipe.getKey());
-            plugin.getLogger().info("Unregistered recipe for " + scrollId);
+            try {
+                boolean removed = Bukkit.removeRecipe(recipe.getKey());
+                if (removed) {
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &7Unregistered recipe for " + scrollId));
+                }
+            } catch (Exception e) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cError unregistering recipe for " + scrollId + ": " + e.getMessage()));
+            }
         }
     }
 
@@ -124,15 +186,40 @@ public class RecipeManager {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
-        meta.setDisplayName(org.bukkit.ChatColor.translateAlternateColorCodes('&', name));
-        List<String> coloredLore = new ArrayList<>();
+        String processedName = replacePlaceholders(name, scrollData);
+        List<String> processedLore = new ArrayList<>();
         for (String line : lore) {
-            coloredLore.add(org.bukkit.ChatColor.translateAlternateColorCodes('&', line));
+            processedLore.add(replacePlaceholders(line, scrollData));
+        }
+
+        meta.setDisplayName(ColorUtils.colorize(processedName));
+        List<String> coloredLore = new ArrayList<>();
+        for (String line : processedLore) {
+            coloredLore.add(ColorUtils.colorize(line));
         }
         meta.setLore(coloredLore);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.setLocalizedName("worldscrolls:" + scrollId.toLowerCase());
+
+        meta.getPersistentDataContainer().set(
+                new NamespacedKey(plugin, "scroll_type"),
+                PersistentDataType.STRING,
+                scrollId
+        );
+
         item.setItemMeta(meta);
         return item;
     }
+
+    private String replacePlaceholders(String text, ConfigurationSection scrollData) {
+        if (text == null) return "";
+        for (String key : scrollData.getKeys(false)) {
+            Object value = scrollData.get(key);
+            if (value != null) {
+                text = text.replace("%" + key + "%", value.toString());
+            }
+        }
+        return text;
+    }
+
 }

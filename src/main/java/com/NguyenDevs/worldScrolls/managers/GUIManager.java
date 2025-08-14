@@ -29,8 +29,6 @@ public class GUIManager {
         Bukkit.getPluginManager().registerEvents(playerGUI, plugin);
         Bukkit.getPluginManager().registerEvents(recipeGUI, plugin);
         Bukkit.getPluginManager().registerEvents(adminGUI, plugin);
-
-        plugin.getLogger().info("GUI event listeners registered successfully!");
     }
 
     public void openPlayerMenu(Player player) {

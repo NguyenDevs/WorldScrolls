@@ -3,10 +3,10 @@ package com.NguyenDevs.worldScrolls.guis;
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
-import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -56,7 +56,6 @@ public abstract class BaseGUI implements Listener {
         openInventories.put(player.getUniqueId(), inventory);
         player.openInventory(inventory);
 
-        SoundUtils.playGUIOpenSound(player);
     }
 
     protected void fillBorder(Inventory inventory) {
@@ -157,7 +156,7 @@ public abstract class BaseGUI implements Listener {
         ItemStack clickedItem = event.getCurrentItem();
         boolean isRightClick = event.getClick().isRightClick();
 
-        SoundUtils.playGUIClickSound(player);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);;
 
         try {
             handleClick(player, inventory, slot, clickedItem, isRightClick);
@@ -176,7 +175,7 @@ public abstract class BaseGUI implements Listener {
         Inventory inventory = event.getInventory();
 
         if (isThisGUI(inventory, player)) {
-            SoundUtils.playGUICloseSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);;
             closeGUI(player);
         }
     }

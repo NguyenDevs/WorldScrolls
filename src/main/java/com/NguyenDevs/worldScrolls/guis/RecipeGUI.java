@@ -2,9 +2,9 @@ package com.NguyenDevs.worldScrolls.guis;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
-import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -237,7 +237,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
                 currentPage.put(player.getUniqueId(), currentPageNum - 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openRecipeList(player);
             }
             return;
@@ -250,7 +250,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
             int maxPages = availableScrolls.size() > 0 ? (availableScrolls.size() - 1) / itemsPerPage + 1 : 1;
             if (currentPageNum < maxPages - 1) {
                 currentPage.put(player.getUniqueId(), currentPageNum + 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openRecipeList(player);
             }
             return;
@@ -268,7 +268,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
             if (identifier.startsWith("recipe:")) {
                 String scrollType = identifier.replace("recipe:", "");
                 openScrollRecipe(player, scrollType);
-                SoundUtils.playGUIClickSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 return;
             }
         }
@@ -282,7 +282,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
         if (relativeSlot >= 0 && startIndex + relativeSlot < availableScrolls.size()) {
             String scrollType = availableScrolls.get(startIndex + relativeSlot);
             openScrollRecipe(player, scrollType);
-            SoundUtils.playGUIClickSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
         }
     }
 
@@ -290,7 +290,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
         if (slot == BACK_SLOT) {
             MenuOrigin o = origin.get(player.getUniqueId());
             viewingScroll.remove(player.getUniqueId());
-            SoundUtils.playGUIClickSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
 
             if (o == MenuOrigin.ADMIN) {
                 plugin.getGuiManager().getAdminGUI().openAdminPanel(player);
@@ -308,7 +308,7 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
         if (slot == SCROLL_LIST_SLOT && clickedItem.getType() == Material.ENCHANTED_BOOK) {
             viewingScroll.remove(player.getUniqueId());
             openRecipeList(player);
-            SoundUtils.playGUIClickSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
         }
     }
 

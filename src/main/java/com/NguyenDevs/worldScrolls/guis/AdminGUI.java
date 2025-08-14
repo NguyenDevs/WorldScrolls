@@ -2,13 +2,15 @@ package com.NguyenDevs.worldScrolls.guis;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
-import com.NguyenDevs.worldScrolls.utils.SoundUtils;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -120,7 +122,7 @@ public class AdminGUI extends BaseGUI {
             player.closeInventory();
             recipeGUI.openFromAdminMenu(player);
 
-            SoundUtils.playGUIClickSound(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
             return;
         }
 
@@ -133,7 +135,7 @@ public class AdminGUI extends BaseGUI {
             int currentPageNum = currentPage.getOrDefault(player.getUniqueId(), 0);
             if (currentPageNum > 0) {
                 currentPage.put(player.getUniqueId(), currentPageNum - 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openAdminPanel(player);
             }
             return;
@@ -146,7 +148,7 @@ public class AdminGUI extends BaseGUI {
             int maxPages = availableScrolls.size() > 0 ? (availableScrolls.size() - 1) / itemsPerPage + 1 : 1;
             if (currentPageNum < maxPages - 1) {
                 currentPage.put(player.getUniqueId(), currentPageNum + 1);
-                SoundUtils.playPageTurnSound(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 openAdminPanel(player);
             }
             return;
@@ -158,7 +160,7 @@ public class AdminGUI extends BaseGUI {
                 if (isRightClick) {
                     player.closeInventory();
                     recipeGUI.openScrollRecipeFromAdmin(player, scrollType);
-                    SoundUtils.playGUIClickSound(player);
+                    player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.05f);
                 } else {
                     giveScrollToAdmin(player, scrollType);
                 }
@@ -215,10 +217,10 @@ public class AdminGUI extends BaseGUI {
                 admin.getInventory().addItem(scrollItem);
                 admin.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("receive") + ": " + scrollConfig.getString("name", scrollType)));
             }
-            SoundUtils.playSuccessSound(admin);
+            admin.playSound(admin.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.3f);
         } else {
             admin.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cFailed to create scroll item!"));
-            SoundUtils.playErrorSound(admin);
+            admin.playSound(admin.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
         }
     }
 
@@ -226,11 +228,11 @@ public class AdminGUI extends BaseGUI {
         try {
             configManager.reloadConfigs();
             admin.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + configManager.getMessage("plugin-reloaded")));
-            SoundUtils.playReloadSound(admin);
+            admin.playSound(admin.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.0f);
             openAdminPanel(admin);
         } catch (Exception e) {
             admin.sendMessage(ColorUtils.colorize(configManager.getMessage("prefix") + " " + "&cReload failed, please check the console!"));
-            SoundUtils.playErrorSound(admin);
+            admin.playSound(admin.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
         }
     }
 
@@ -269,6 +271,7 @@ public class AdminGUI extends BaseGUI {
         try {
             ItemStack item = new ItemStack(Material.PAPER);
             ItemMeta meta = item.getItemMeta();
+
             if (meta != null) {
                 String name = scrollConfig.getString("name", scrollType);
                 meta.setDisplayName(ColorUtils.colorize(name));
@@ -284,6 +287,13 @@ public class AdminGUI extends BaseGUI {
                 }
 
                 meta.setLocalizedName("worldscrolls:" + scrollType);
+
+                meta.getPersistentDataContainer().set(
+                        new NamespacedKey(plugin, "scroll_type"),
+                        PersistentDataType.STRING,
+                        scrollType
+                );
+
                 item.setItemMeta(meta);
             }
             return item;
@@ -291,6 +301,7 @@ public class AdminGUI extends BaseGUI {
             return null;
         }
     }
+
 
     private Material getScrollIcon(String scrollType) {
         switch (scrollType.toLowerCase()) {

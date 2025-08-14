@@ -19,8 +19,27 @@ public class ConfigManager {
 
     private final WorldScrolls plugin;
     private final Map<String, FileConfiguration> configs = new HashMap<>();
-    private final List<String> configFiles = Arrays.asList(
-            "config.yml", "messages.yml", "scrolls.yml", "recipes.yml"
+
+    private final List<String> configFiles = new ArrayList<>(Arrays.asList(
+            "config.yml",
+            "messages.yml",
+            "scrolls.yml",
+            "recipes.yml"
+    ));
+
+    private final List<String> scrollConfigFiles = Arrays.asList(
+            "scroll_of_exit.yml",
+            "scroll_of_cyclone.yml",
+            "scroll_of_frostbite.yml",
+            "scroll_of_gravitation.yml",
+            "scroll_of_invisibility.yml",
+            "scroll_of_meteor.yml",
+            "scroll_of_phoenix.yml",
+            "scroll_of_radiation.yml",
+            "scroll_of_solar.yml",
+            "scroll_of_thorn.yml",
+            "scroll_of_thunder.yml",
+            "scroll_of_frostbite.yml"
     );
 
     public ConfigManager(WorldScrolls plugin) {
@@ -28,12 +47,27 @@ public class ConfigManager {
     }
 
     public void initializeConfigs() {
+        // Tạo folder plugin
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdirs();
         }
+
+        // Tạo folder scrolls
+        File scrollsFolder = new File(plugin.getDataFolder(), "scrolls");
+        if (!scrollsFolder.exists()) {
+            scrollsFolder.mkdirs();
+        }
+
+        // Thêm các file scrolls/... vào danh sách configFiles
+        for (String scrollFile : scrollConfigFiles) {
+            configFiles.add("scrolls/" + scrollFile);
+        }
+
+        // Xử lý tất cả file config
         for (String configFile : configFiles) {
             processConfigFile(configFile);
         }
+
         plugin.getLogger().info("All configurations have been loaded successfully!");
     }
 
@@ -91,7 +125,6 @@ public class ConfigManager {
 
     private boolean mergeConfigs(ConfigurationSection source, ConfigurationSection target) {
         boolean hasChanges = false;
-
         for (String key : source.getKeys(false)) {
             if (source.isConfigurationSection(key)) {
                 if (!target.isConfigurationSection(key)) {
@@ -108,10 +141,8 @@ public class ConfigManager {
                 }
             }
         }
-
         return hasChanges;
     }
-
 
     public void reloadConfigs() {
         configs.clear();
@@ -139,40 +170,28 @@ public class ConfigManager {
         return getConfig("recipes.yml");
     }
 
-    public void saveConfig(String fileName) {
-        FileConfiguration config = configs.get(fileName);
-        if (config == null) {
-            plugin.getLogger().warning("Configuration not found: " + fileName);
-            return;
+    public FileConfiguration getScrollMessageConfig(String scrollFileName) {
+        return getConfig("scrolls/" + scrollFileName + ".yml");
+    }
+
+    public String getScrollMessage(String scrollFileName, String path, Map<String, String> placeholders) {
+        FileConfiguration cfg = getScrollMessageConfig(scrollFileName);
+        if (cfg == null) return "Message not found: " + path;
+        String msg = cfg.getString("messages." + path, "Message not found: " + path);
+        msg = ColorUtils.colorize(msg);
+        if (placeholders != null) {
+            for (Map.Entry<String, String> e : placeholders.entrySet()) {
+                msg = msg.replace("%" + e.getKey() + "%", e.getValue());
+            }
         }
-        try {
-            File configFile = new File(plugin.getDataFolder(), fileName);
-            config.save(configFile);
-        } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save config: " + fileName, e);
-        }
+        return msg;
     }
 
-    public void saveAllConfigs() {
-        for (String fileName : configs.keySet()) {
-            saveConfig(fileName);
-        }
-        plugin.getLogger().info("All configurations saved!");
+    public String getScrollMessage(String scrollFileName, String path) {
+        return getScrollMessage(scrollFileName, path, null);
     }
 
-    public boolean isWorldDisabled(String worldName) {
-        FileConfiguration config = getMainConfig();
-        if (config == null) return false;
-        List<String> disabledWorlds = config.getStringList("disabled-worlds");
-        return disabledWorlds.contains(worldName);
-    }
-
-    public boolean isUpdateNotifyEnabled() {
-        FileConfiguration config = getMainConfig();
-        if (config == null) return true;
-        return config.getBoolean("update-notify", true);
-    }
-
+    // ==== Các hàm cũ giữ nguyên ====
     public String getMessage(String path) {
         FileConfiguration messages = getMessages();
         if (messages == null) return "Message not found: " + path;
@@ -194,8 +213,43 @@ public class ConfigManager {
         return getMessage("prefix");
     }
 
-    public FileConfiguration getConfigOrDefault(String fileName) {
-        return configs.getOrDefault(fileName, new YamlConfiguration());
+    public boolean isWorldDisabled(String worldName) {
+        FileConfiguration config = getMainConfig();
+        if (config == null) return false;
+        List<String> disabledWorlds = config.getStringList("disabled-worlds");
+        return disabledWorlds.contains(worldName);
+    }
+
+    public boolean isUpdateNotifyEnabled() {
+        FileConfiguration config = getMainConfig();
+        if (config == null) return true;
+        return config.getBoolean("update-notify", true);
+    }
+
+    public void saveConfig(String fileName) {
+        FileConfiguration config = configs.get(fileName);
+        if (config == null) {
+            plugin.getLogger().warning("Configuration not found: " + fileName);
+            return;
+        }
+        try {
+            File configFile = new File(plugin.getDataFolder(), fileName);
+            config.save(configFile);
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to save config: " + fileName, e);
+        }
+    }
+
+    public void saveAllConfigs() {
+        for (String fileName : configs.keySet()) {
+            saveConfig(fileName);
+        }
+        plugin.getLogger().info("All configurations saved!");
+    }
+
+    public List<String> getStringList(String fileName, String path) {
+        FileConfiguration config = getConfig(fileName);
+        return config != null ? config.getStringList(path) : Collections.emptyList();
     }
 
     public Object getValue(String fileName, String path) {
@@ -221,10 +275,5 @@ public class ConfigManager {
     public boolean getBoolean(String fileName, String path) {
         FileConfiguration config = getConfig(fileName);
         return config != null && config.getBoolean(path);
-    }
-
-    public List<String> getStringList(String fileName, String path) {
-        FileConfiguration config = getConfig(fileName);
-        return config != null ? config.getStringList(path) : Collections.emptyList();
     }
 }
