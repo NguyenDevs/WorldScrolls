@@ -1,3 +1,7 @@
+min: 1
+max: 5
+damage: 15
+material: PAPER
 messages:
   prefix: "&7[<gradient:#f7054e:#f72905>Scroll Of Meteor</gradient>&7]"
   on-cooldown: "&cYou need to wait %remaining% seconds to use this Scroll!"
