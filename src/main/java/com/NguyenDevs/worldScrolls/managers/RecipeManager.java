@@ -91,7 +91,6 @@ public class RecipeManager {
 
         ConfigurationSection materialSection = recipeData.getConfigurationSection("material");
         if (materialSection != null) {
-            // Track used characters in recipe
             Set<Character> usedChars = new HashSet<>();
             for (String row : shape) {
                 for (char c : row.toCharArray()) {
@@ -114,7 +113,6 @@ public class RecipeManager {
 
                 if (matName == null || matName.equalsIgnoreCase("X")) continue;
 
-                // Only set ingredient for characters used in recipe
                 if (!usedChars.contains(symbolChar)) {
                     continue;
                 }
@@ -128,7 +126,7 @@ public class RecipeManager {
                 try {
                     recipe.setIngredient(symbolChar, mat);
                     } catch (Exception e) {
-                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to set ingredient " + symbolChar + " for " + scrollId + ": " + e.getMessage()));
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to set ingredient " + symbolChar + " for " + scrollId + " " + e));
                     return;
                 }
             }
@@ -177,11 +175,18 @@ public class RecipeManager {
     }
 
     private ItemStack createScrollItem(String scrollId, ConfigurationSection scrollData) {
+        String SCROLL_FILE = scrollId;
+        ConfigurationSection scrollConfig2 = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
+
         String name = scrollData.getString("name", "Scroll");
         List<String> lore = scrollData.getStringList("lore");
-        Material mat = Material.getMaterial(scrollData.getString("material", "PAPER").toUpperCase());
-        if (mat == null) mat = Material.PAPER;
-
+        String materialName = scrollConfig2.getString("material", "PAPER");
+        Material mat;
+        try {
+            mat = Material.valueOf(materialName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            mat = Material.PAPER;
+        }
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
