@@ -376,14 +376,26 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
         if (scrollConfig == null) return new ItemStack(Material.PAPER);
 
+        String materialName = scrollConfig.getString("material", "PAPER");
+        Material mat;
+        try {
+            mat = Material.valueOf(materialName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            mat = Material.PAPER;
+        }
+
         List<String> lore = new ArrayList<>();
         for (String line : scrollConfig.getStringList("lore")) {
             lore.add(ColorUtils.colorize(replacePlaceholders(line, scrollConfig)));
         }
-        return createItem(Material.PAPER,
+
+        return createItem(
+                mat,
                 ColorUtils.colorize(scrollConfig.getString("name", scrollType)),
-                lore);
+                lore
+        );
     }
+
 
 
     private String replacePlaceholders(String text, ConfigurationSection config) {
