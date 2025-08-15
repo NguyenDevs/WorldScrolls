@@ -1,3 +1,58 @@
+cast-time: 3.0
+material: PAPER
+darkness-duration: 200
+
+sounds:
+  save-sound:
+    sound: "BLOCK_ENCHANTMENT_TABLE_USE"
+    volume: 0.7
+    pitch: 1.2
+  lock-sound:
+    sound: "ITEM_LODESTONE_COMPASS_LOCK"
+    volume: 0.5
+    pitch: 0.1
+  cancel-sound:
+    sound: "BLOCK_BEACON_POWER_SELECT"
+    volume: 0.5
+    pitch: 0.1
+  teleport-from-sound:
+    sound: "ENTITY_ENDERMAN_TELEPORT"
+    volume: 1.0
+    pitch: 1.0
+  teleport-to-sound:
+    sound: "ENTITY_ENDERMAN_TELEPORT"
+    volume: 1.0
+    pitch: 1.2
+  success-sound:
+    sound: "BLOCK_PORTAL_TRIGGER"
+    volume: 0.1
+    pitch: 1.5
+
+particles:
+  save-particles:
+    particle: "ENCHANTMENT_TABLE"
+    count: 20
+    offset-x: 1.0
+    offset-y: 1.0
+    offset-z: 1.0
+    speed: 0.1
+
+  teleport-from-particles:
+    particle: "PORTAL"
+    count: 50
+    offset-x: 1.0
+    offset-y: 1.0
+    offset-z: 1.0
+    speed: 0.3
+
+  teleport-to-particles:
+    particle: "PORTAL"
+    count: 50
+    offset-x: 1.0
+    offset-y: 1.0
+    offset-z: 1.0
+    speed: 0.3
+
 messages:
   prefix: "&7[<gradient:#7d7675:#e48aff>Scroll Of Exit</gradient>&7]"
   on-cooldown: "&cYou need to wait %remaining% seconds to use this Scroll!"

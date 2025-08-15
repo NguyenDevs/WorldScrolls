@@ -4,7 +4,6 @@ import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,7 +15,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
@@ -24,52 +27,42 @@ public class ScrollOfExit implements Listener {
 
     private final WorldScrolls plugin;
     private final NamespacedKey KEY_DATA;
-    private final NamespacedKey KEY_LOCKED;
     private final NamespacedKey KEY_SCROLL_TYPE;
     private static final String SCROLL_FILE = "scroll_of_exit";
 
     private final Map<UUID, Long> lastUseTime = new HashMap<>();
+    private final Map<UUID, BukkitTask> activeCasts = new HashMap<>();
+
+    private ConfigurationSection scrollConfig;
+    private ConfigurationSection scrollsConfig;
 
     public ScrollOfExit(WorldScrolls plugin) {
         this.plugin = plugin;
         this.KEY_DATA = new NamespacedKey(plugin, "exit_location");
-        this.KEY_LOCKED = new NamespacedKey(plugin, "exit_locked");
         this.KEY_SCROLL_TYPE = new NamespacedKey(plugin, "scroll_type");
+        loadConfigurations();
+    }
+
+    private void loadConfigurations() {
+        this.scrollConfig = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
+        this.scrollsConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_exit");
+    }
+
+    public void reloadConfigurations() {
+        loadConfigurations();
     }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.PAPER) return;
-        if (!isScrollOfExit(item)) return;
+        String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
+        if (item == null || item.getType() != Material.valueOf(material) || !isScrollOfExit(item)) return;
 
         Action action = event.getAction();
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
             handleSaveExitPoint(event, player, item);
         } else if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-            ConfigurationSection scrollConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_exit");
-            int cooldownSeconds = scrollConfig != null ? scrollConfig.getInt("cooldown", 0) : 0;
-
-            if (cooldownSeconds > 0) {
-                long now = System.currentTimeMillis();
-                if (lastUseTime.containsKey(player.getUniqueId())) {
-                    long last = lastUseTime.get(player.getUniqueId());
-                    long elapsed = now - last;
-                    if (elapsed < cooldownSeconds * 1000L) {
-                        long remaining = (cooldownSeconds * 1000L - elapsed) / 1000L;
-                        String cooldownMsg = plugin.getConfigManager()
-                                .getScrollMessage(SCROLL_FILE, "on-cooldown")
-                                .replace("%remaining%", String.valueOf(remaining));
-                        player.sendMessage(ColorUtils.colorize(
-                                plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " + cooldownMsg
-                        ));
-                        return;
-                    }
-                }
-                lastUseTime.put(player.getUniqueId(), now);
-            }
-
             handleUseExit(event, player, item);
         }
     }
@@ -78,9 +71,8 @@ public class ScrollOfExit implements Listener {
         event.setCancelled(true);
 
         if (hasSavedLocation(item)) {
-            player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                    plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "save-already-locked")));
-            player.playSound(player.getLocation(), Sound.ITEM_LODESTONE_COMPASS_LOCK, 0.5f, 0.1f);
+            sendMessage(player, "save-already-locked");
+            playSound(player, "lock-sound");
             return;
         }
 
@@ -97,71 +89,152 @@ public class ScrollOfExit implements Listener {
                 player.getInventory().addItem(savedScroll);
             } else {
                 player.getWorld().dropItem(player.getLocation(), savedScroll);
-                player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                        plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "drop-on-ground")));
+                sendMessage(player, "drop-on-ground");
             }
         } else {
             player.getInventory().setItemInMainHand(savedScroll);
         }
 
-        Map<String, String> ph = locPlaceholders(saveLocation);
-        player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "saved-location", ph)));
-
-        player.spawnParticle(Particle.ENCHANTMENT_TABLE, saveLocation, 20, 1, 1, 1, 0.1);
-        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.2f);
+        Map<String, String> placeholders = locPlaceholders(saveLocation);
+        sendMessage(player, "saved-location", placeholders);
+        spawnParticles(player, saveLocation, "save-particles");
+        playSound(player, "save-sound");
     }
 
     private void handleUseExit(PlayerInteractEvent event, Player player, ItemStack item) {
         event.setCancelled(true);
 
+        if (isOnCooldown(player)) return;
+
         Location exitLocation = getSavedLocation(item);
         if (exitLocation == null) {
-            player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                    plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "no-location")));
-            player.playSound(player.getLocation(), Sound.ITEM_LODESTONE_COMPASS_LOCK, 0.5f, 0.1f);
+            sendMessage(player, "no-location");
+            playSound(player, "lock-sound");
             return;
         }
 
-        ConfigurationSection scrollConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_exit");
-        double castTime = scrollConfig != null ? scrollConfig.getDouble("cast") : 0.5;
+        if (activeCasts.containsKey(player.getUniqueId())) {
+            sendMessage(player, "already-casting");
+            return;
+        }
+
+        double castTime = scrollConfig != null ? scrollConfig.getDouble("cast-time", 3.0) : 3.0;
         if (castTime > 0) {
-            handleDelayedTeleport(player, item, exitLocation, castTime);
+            startCastingProcess(player, item, exitLocation, castTime);
         } else {
             executeTeleport(player, item, exitLocation);
         }
     }
 
-    private void handleDelayedTeleport(Player player, ItemStack item, Location exitLocation, double castTime) {
-        player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prepare-teleport")));
-        Location originalLocation = player.getLocation().clone();
+    private boolean isOnCooldown(Player player) {
+        int cooldownSeconds = scrollsConfig != null ? scrollsConfig.getInt("cooldown", 0) : 0;
 
-        new BukkitRunnable() {
+        if (cooldownSeconds > 0) {
+            long now = System.currentTimeMillis();
+            if (lastUseTime.containsKey(player.getUniqueId())) {
+                long last = lastUseTime.get(player.getUniqueId());
+                long elapsed = now - last;
+                if (elapsed < cooldownSeconds * 1000L) {
+                    long remaining = (cooldownSeconds * 1000L - elapsed) / 1000L;
+                    Map<String, String> placeholders = new HashMap<>();
+                    placeholders.put("remaining", String.valueOf(remaining));
+                    sendMessage(player, "on-cooldown", placeholders);
+                    return true;
+                }
+            }
+            lastUseTime.put(player.getUniqueId(), now);
+        }
+        return false;
+    }
+
+    private void startCastingProcess(Player player, ItemStack item, Location exitLocation, double castTime) {
+        sendMessage(player, "prepare-teleport");
+        Location castLocation = player.getLocation().clone();
+
+        BukkitTask matrixTask = startMatrixEffect(player, castLocation);
+
+        BukkitTask castTask = new BukkitRunnable() {
             int ticks = 0;
             final int totalTicks = (int) (castTime * 20);
 
             @Override
             public void run() {
                 if (!player.isOnline()) {
+                    matrixTask.cancel();
+                    activeCasts.remove(player.getUniqueId());
                     cancel();
                     return;
                 }
-                if (player.getLocation().distance(originalLocation) > 1.0) {
-                    player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                            plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "teleport-cancelled")));
-                    player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.5f, 0.1f);
+
+                if (player.getLocation().distance(castLocation) > 1.0) {
+                    sendMessage(player, "teleport-cancelled");
+                    playSound(player, "cancel-sound");
+                    matrixTask.cancel();
+                    activeCasts.remove(player.getUniqueId());
                     cancel();
                     return;
                 }
-                player.spawnParticle(Particle.PORTAL, player.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
+
                 ticks++;
                 if (ticks >= totalTicks) {
+                    matrixTask.cancel();
                     executeTeleport(player, item, exitLocation);
+                    activeCasts.remove(player.getUniqueId());
                     cancel();
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
+
+        activeCasts.put(player.getUniqueId(), castTask);
+    }
+
+    private BukkitTask startMatrixEffect(Player player, Location center) {
+        return new BukkitRunnable() {
+            double angle = 0;
+            double radius = 1.5;
+            int ticks = 0;
+            final int maxTicks = (int) (scrollConfig.getDouble("cast-time", 3.0) * 20);
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || ticks >= maxTicks) {
+                    cancel();
+                    return;
+                }
+
+                double currentRadius = radius * (1.0 - (double) ticks / maxTicks);
+
+                for (int i = 0; i < 3; i++) {
+                    double particleAngle = angle + (i * 120.0 * Math.PI / 180.0);
+                    double x = center.getX() + currentRadius * Math.cos(particleAngle);
+                    double z = center.getZ() + currentRadius * Math.sin(particleAngle);
+                    Location particleLoc = new Location(center.getWorld(), x, center.getY() + 0.5, z);
+
+                    center.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, particleLoc, 1, 0, 0, 0, 0.1);
+                    center.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 2, 0.1, 0.1, 0.1, 0.01);
+                }
+
+                angle += Math.PI / 10;
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+    }
+
+    private Collection<Player> getNearbyPlayers(Location center, double radius) {
+        Collection<Player> nearby = new ArrayList<>();
+        for (Player p : center.getWorld().getPlayers()) {
+            if (p.getLocation().distance(center) <= radius) {
+                nearby.add(p);
+            }
+        }
+        return nearby;
+    }
+
+    private void applyDarknessEffect(Collection<Player> players) {
+        int duration = scrollConfig.getInt("darkness-duration", 200);
+        for (Player p : players) {
+            p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, duration, 0, false, false, false));
+        }
     }
 
     private void executeTeleport(Player player, ItemStack item, Location exitLocation) {
@@ -169,29 +242,74 @@ public class ScrollOfExit implements Listener {
         if (world != null) world.getChunkAt(exitLocation).load();
 
         Location from = player.getLocation();
-        player.getWorld().spawnParticle(Particle.PORTAL, from, 50, 1, 1, 1, 0.3);
-        player.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+        spawnParticles(player, from, "teleport-from-particles");
+        playSound(player, "teleport-from-sound");
 
         player.teleport(exitLocation);
 
-        exitLocation.getWorld().spawnParticle(Particle.PORTAL, exitLocation, 50, 1, 1, 1, 0.3);
-        exitLocation.getWorld().playSound(exitLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.2f);
+        spawnParticles(player, exitLocation, "teleport-to-particles");
+        playSound(player, "teleport-to-sound");
 
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
-
+        } else {
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         }
-        else player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
 
-        Map<String, String> ph = locPlaceholders(exitLocation);
-        player.sendMessage(ColorUtils.colorize(plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix") + " " +
-                plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "teleported", ph)));
-        player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_TRIGGER, 0.1f, 1.5f);
-        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_EYE_LAUNCH, 0.7f, 1.1f);
+        Map<String, String> placeholders = locPlaceholders(exitLocation);
+        sendMessage(player, "teleported", placeholders);
+        playSound(player, "success-sound");
+    }
+
+    private void playSound(Player player, String soundKey) {
+        ConfigurationSection soundConfig = scrollConfig.getConfigurationSection("sounds." + soundKey);
+        if (soundConfig != null) {
+            String soundName = soundConfig.getString("sound", "BLOCK_NOTE_BLOCK_PLING");
+            float volume = (float) soundConfig.getDouble("volume", 1.0);
+            float pitch = (float) soundConfig.getDouble("pitch", 1.0);
+
+            try {
+                Sound sound = Sound.valueOf(soundName.toUpperCase());
+                player.playSound(player.getLocation(), sound, volume, pitch);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid sound: " + soundName);
+            }
+        }
+    }
+
+
+    private void spawnParticles(Player player, Location location, String particleKey) {
+        ConfigurationSection particleConfig = scrollConfig.getConfigurationSection("particles." + particleKey);
+        if (particleConfig != null) {
+            String particleName = particleConfig.getString("particle", "PORTAL");
+            int count = particleConfig.getInt("count", 50);
+            double offsetX = particleConfig.getDouble("offset-x", 1.0);
+            double offsetY = particleConfig.getDouble("offset-y", 1.0);
+            double offsetZ = particleConfig.getDouble("offset-z", 1.0);
+            double speed = particleConfig.getDouble("speed", 0.3);
+
+            try {
+                Particle particle = Particle.valueOf(particleName.toUpperCase());
+                location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid particle: " + particleName);
+            }
+        }
+    }
+
+    private void sendMessage(Player player, String messageKey) {
+        sendMessage(player, messageKey, new HashMap<>());
+    }
+
+    private void sendMessage(Player player, String messageKey, Map<String, String> placeholders) {
+        String prefix = plugin.getConfigManager().getScrollMessage(SCROLL_FILE, "prefix");
+        String message = plugin.getConfigManager().getScrollMessage(SCROLL_FILE, messageKey, placeholders);
+        player.sendMessage(ColorUtils.colorize(prefix + " " + message));
     }
 
     private boolean isScrollOfExit(ItemStack item) {
-        if (item == null || item.getType() != Material.PAPER) return false;
+        String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
+        if (item == null || item.getType() != Material.valueOf(material)) return false;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return false;
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -240,7 +358,6 @@ public class ScrollOfExit implements Listener {
             String data = serializeLocation(location);
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(KEY_DATA, PersistentDataType.STRING, data);
-            pdc.set(KEY_LOCKED, PersistentDataType.INTEGER, 1);
 
             meta.setLocalizedName("worldscrolls:scroll_of_exit:" + data);
             meta.setLore(lore);

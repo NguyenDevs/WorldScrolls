@@ -31,7 +31,8 @@ public final class WorldScrolls extends JavaPlugin {
     private static WorldScrolls instance;
     private WGPlugin wgPlugin;
     private boolean worldGuardReady = false;
-
+    private ScrollOfMeteor scrollOfMeteor;
+    private ScrollOfExit scrollOfExit;
 
     @Override
     public void onLoad() {
@@ -74,8 +75,11 @@ public final class WorldScrolls extends JavaPlugin {
     
     private void registerEventListeners() {
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new ScrollOfExit(this), this);
-        Bukkit.getPluginManager().registerEvents(new ScrollOfMeteor(this), this);
+
+        scrollOfExit = new ScrollOfExit(this);
+        Bukkit.getPluginManager().registerEvents(scrollOfExit, this);
+        scrollOfMeteor = new ScrollOfMeteor(this);
+        Bukkit.getPluginManager().registerEvents(scrollOfMeteor, this);
     }
     
     private void registerCommands() {
@@ -105,6 +109,12 @@ public final class WorldScrolls extends JavaPlugin {
     }
     public RecipeManager getRecipeManager() {
         return recipeManager;
+    }
+    public ScrollOfMeteor getScrollOfMeteor() {
+        return scrollOfMeteor;
+    }
+    public ScrollOfExit getScrollOfExit() {
+        return scrollOfExit;
     }
     
     public GUIManager getGUIManager() {

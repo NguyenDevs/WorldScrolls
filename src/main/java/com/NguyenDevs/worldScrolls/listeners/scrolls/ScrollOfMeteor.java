@@ -67,24 +67,37 @@ public class ScrollOfMeteor implements Listener {
     private final Map<UUID, Long> lastUseTime = new HashMap<>();
     private final Map<UUID, Long> lastUseTime2 = new HashMap<>();
 
+    private ConfigurationSection scrollConfig;
+    private ConfigurationSection scrollsConfig;
+
+
     public ScrollOfMeteor(WorldScrolls plugin) {
         this.plugin = plugin;
         this.KEY_SCROLL_TYPE = new NamespacedKey(plugin, "scroll_type");
         Bukkit.getPluginManager().registerEvents(this, plugin);
+        loadConfigurations();
     }
 
+    private void loadConfigurations() {
+        this.scrollConfig = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
+        this.scrollsConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_meteor");
+    }
+
+    public void reloadConfigurations() {
+        loadConfigurations();
+
+    }
 
     @EventHandler
     public void onUse(org.bukkit.event.player.PlayerInteractEvent event) {
+        int minSpawn = (int) (scrollConfig.getDouble("min", 1.0));
+        int maxSpawn = (int) (scrollConfig.getDouble("max", 3.0));
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.PAPER) return;
+        String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
+        if (item == null || item.getType() != Material.valueOf(material)) return;
         if (!isScrollOfMeteor(item)) return;
 
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR) return;
-
-        event.setCancelled(true);
 
         long now = System.currentTimeMillis();
         if (lastUseTime.containsKey(player.getUniqueId()) &&
@@ -93,11 +106,7 @@ public class ScrollOfMeteor implements Listener {
         }
 
         lastUseTime.put(player.getUniqueId(), now);
-
-        ConfigurationSection scrollConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_meteor");
-        int minSpawn = scrollConfig.getInt("min", 1);
-        int maxSpawn = scrollConfig.getInt("max", 1);
-        int cooldownSeconds = scrollConfig.getInt("cooldown", 0);
+        int cooldownSeconds = scrollsConfig != null ? scrollsConfig.getInt("cooldown", 0) : 0;
 
         if(cooldownSeconds > 0) {
             long now1 = System.currentTimeMillis();
@@ -493,8 +502,7 @@ public class ScrollOfMeteor implements Listener {
         }
 
         private void applyShockwaveAt(Location center) {
-            ConfigurationSection scrollConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_meteor");
-            double baseDamage = scrollConfig != null ? scrollConfig.getDouble("damage") : 15 + 5.0 + meteorSize * 1.0;
+            double baseDamage = scrollConfig.getDouble("damage") + meteorSize * 1.0;
             World world = center.getWorld();
             double knockRadius = meteorSize * 2.5;
             for (Player player : world.getPlayers()) {
