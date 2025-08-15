@@ -56,7 +56,8 @@ public class ScrollOfExit implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.PAPER || !isScrollOfExit(item)) return;
+        String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
+        if (item == null || item.getType() != Material.valueOf(material) || !isScrollOfExit(item)) return;
 
         Action action = event.getAction();
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
@@ -276,21 +277,6 @@ public class ScrollOfExit implements Listener {
         }
     }
 
-    private void playSound(Location location, String soundKey) {
-        ConfigurationSection soundConfig = scrollConfig.getConfigurationSection("sounds." + soundKey);
-        if (soundConfig != null) {
-            String soundName = soundConfig.getString("sound", "BLOCK_NOTE_BLOCK_PLING");
-            float volume = (float) soundConfig.getDouble("volume", 1.0);
-            float pitch = (float) soundConfig.getDouble("pitch", 1.0);
-
-            try {
-                Sound sound = Sound.valueOf(soundName.toUpperCase());
-                location.getWorld().playSound(location, sound, volume, pitch);
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Invalid sound: " + soundName);
-            }
-        }
-    }
 
     private void spawnParticles(Player player, Location location, String particleKey) {
         ConfigurationSection particleConfig = scrollConfig.getConfigurationSection("particles." + particleKey);
