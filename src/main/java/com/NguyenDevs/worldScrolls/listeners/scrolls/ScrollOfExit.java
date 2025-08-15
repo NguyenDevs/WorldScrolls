@@ -4,8 +4,6 @@ import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,6 +19,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
@@ -178,7 +177,7 @@ public class ScrollOfExit implements Listener {
                 ticks++;
                 if (ticks >= totalTicks) {
                     matrixTask.cancel();
-                    executeTeleportWithEffects(player, item, exitLocation, castLocation);
+                    executeTeleport(player, item, exitLocation);
                     activeCasts.remove(player.getUniqueId());
                     cancel();
                 }
@@ -220,26 +219,6 @@ public class ScrollOfExit implements Listener {
         }.runTaskTimer(plugin, 0L, 2L);
     }
 
-    private void executeTeleportWithEffects(Player player, ItemStack item, Location exitLocation, Location startLocation) {
-        Collection<Player> nearbyPlayers = getNearbyPlayers(startLocation, 1.5);
-        applyDarknessEffect(nearbyPlayers);
-
-        TerrainData startTerrain = saveTerrainArea(startLocation, 3, 5);
-        TerrainData destTerrain = saveTerrainArea(exitLocation, 3, 5);
-
-        sinkTerrain(startLocation, startTerrain, () -> {
-            executeTeleport(player, item, exitLocation.clone().subtract(0, 5, 0));
-
-            restoreTerrain(startLocation, startTerrain);
-
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                raiseTerrain(exitLocation, destTerrain, player);
-            }, 10L);
-        });
-
-        sinkTerrain(exitLocation, destTerrain, null);
-    }
-
     private Collection<Player> getNearbyPlayers(Location center, double radius) {
         Collection<Player> nearby = new ArrayList<>();
         for (Player p : center.getWorld().getPlayers()) {
@@ -255,132 +234,6 @@ public class ScrollOfExit implements Listener {
         for (Player p : players) {
             p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, duration, 0, false, false, false));
         }
-    }
-
-    private void sinkTerrain(Location center, TerrainData terrainData, Runnable callback) {
-        new BukkitRunnable() {
-            int layer = 0;
-
-            @Override
-            public void run() {
-                if (layer >= 5) {
-                    if (callback != null) {
-                        Bukkit.getScheduler().runTaskLater(plugin, callback, 10L);
-                    }
-                    cancel();
-                    return;
-                }
-
-                for (int x = -1; x <= 1; x++) {
-                    for (int z = -1; z <= 1; z++) {
-                        for (int y = 3; y >= -5; y--) {
-                            Location fromLoc = center.clone().add(x, y, z);
-                            Location toLoc = center.clone().add(x, y - layer - 1, z);
-                            Block fromBlock = fromLoc.getBlock();
-                            Block toBlock = toLoc.getBlock();
-
-                            if (toLoc.getBlockY() >= center.getWorld().getMinHeight()) {
-                                toBlock.setBlockData(fromBlock.getBlockData());
-                            }
-                        }
-
-                        Location topLoc = center.clone().add(x, 3 - layer, z);
-                        topLoc.getBlock().setType(Material.AIR);
-
-                        topLoc.getWorld().spawnParticle(Particle.BLOCK_CRACK,
-                                topLoc.add(0.5, 0.5, 0.5), 10, 0.3, 0.3, 0.3, 0.1,
-                                terrainData.getBlockData(x, 3 - layer, z));
-                    }
-                }
-
-                playSound(center, "sink-sound");
-                layer++;
-            }
-        }.runTaskTimer(plugin, 0L, 2L);
-    }
-
-    private void restoreTerrain(Location center, TerrainData terrainData) {
-        new BukkitRunnable() {
-            int layer = 0;
-
-            @Override
-            public void run() {
-                if (layer >= 5) {
-                    cancel();
-                    return;
-                }
-
-                for (int x = -1; x <= 1; x++) {
-                    for (int z = -1; z <= 1; z++) {
-                        for (int y = -5; y <= 3; y++) {
-                            Location blockLoc = center.clone().add(x, y, z);
-                            BlockData originalData = terrainData.getBlockData(x, y, z);
-
-                            if (originalData != null) {
-                                blockLoc.getBlock().setBlockData(originalData);
-                            }
-                        }
-                    }
-                }
-
-                playSound(center, "restore-sound");
-                layer++;
-            }
-        }.runTaskTimer(plugin, 0L, 2L);
-    }
-
-    private void raiseTerrain(Location center, TerrainData terrainData, Player player) {
-        new BukkitRunnable() {
-            int layer = 0;
-
-            @Override
-            public void run() {
-                if (layer >= 5) {
-                    cancel();
-                    return;
-                }
-
-                for (int x = -1; x <= 1; x++) {
-                    for (int z = -1; z <= 1; z++) {
-                        for (int y = -5; y <= 3; y++) {
-                            Location fromLoc = center.clone().add(x, y - 5 + layer, z);
-                            Location toLoc = center.clone().add(x, y - 4 + layer, z);
-                            Block fromBlock = fromLoc.getBlock();
-                            Block toBlock = toLoc.getBlock();
-
-                            if (fromLoc.getBlockY() >= center.getWorld().getMinHeight()) {
-                                toBlock.setBlockData(fromBlock.getBlockData());
-                                fromBlock.setType(Material.AIR);
-                            }
-                        }
-                    }
-                }
-
-                if (player != null && player.isOnline() && player.getLocation().distance(center) <= 2.0) {
-                    Location newLoc = player.getLocation().add(0, 0.6, 0);
-                    player.teleport(newLoc);
-                }
-
-                playSound(center, "restore-sound");
-                layer++;
-            }
-        }.runTaskTimer(plugin, 0L, 2L);
-    }
-
-    private TerrainData saveTerrainArea(Location center, int radius, int height) {
-        Map<String, BlockData> blocks = new HashMap<>();
-
-        for (int x = -radius; x <= radius; x++) {
-            for (int y = -height; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
-                    Location blockLoc = center.clone().add(x, y, z);
-                    Block block = blockLoc.getBlock();
-                    blocks.put(x + "," + y + "," + z, block.getBlockData());
-                }
-            }
-        }
-
-        return new TerrainData(blocks);
     }
 
     private void executeTeleport(Player player, ItemStack item, Location exitLocation) {
@@ -469,7 +322,8 @@ public class ScrollOfExit implements Listener {
     }
 
     private boolean isScrollOfExit(ItemStack item) {
-        if (item == null || item.getType() != Material.PAPER) return false;
+        String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
+        if (item == null || item.getType() != Material.valueOf(material)) return false;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return false;
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -568,17 +422,5 @@ public class ScrollOfExit implements Listener {
         ph.put("y", String.valueOf(l.getBlockY()));
         ph.put("z", String.valueOf(l.getBlockZ()));
         return ph;
-    }
-
-    private static class TerrainData {
-        private final Map<String, BlockData> blocks;
-
-        public TerrainData(Map<String, BlockData> blocks) {
-            this.blocks = new HashMap<>(blocks);
-        }
-
-        public BlockData getBlockData(int x, int y, int z) {
-            return blocks.get(x + "," + y + "," + z);
-        }
     }
 }
