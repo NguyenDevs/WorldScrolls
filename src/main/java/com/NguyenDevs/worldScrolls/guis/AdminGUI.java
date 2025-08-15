@@ -269,7 +269,15 @@ public class AdminGUI extends BaseGUI {
 
     private ItemStack createScrollItem(String scrollType, ConfigurationSection scrollConfig) {
         try {
-            ItemStack item = new ItemStack(Material.PAPER);
+            String materialName = scrollConfig.getString("material", "PAPER");
+            Material mat;
+            try {
+                mat = Material.valueOf(materialName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                mat = Material.PAPER;
+            }
+
+            ItemStack item = new ItemStack(mat);
             ItemMeta meta = item.getItemMeta();
 
             if (meta != null) {
@@ -301,6 +309,7 @@ public class AdminGUI extends BaseGUI {
             return null;
         }
     }
+
 
 
     private Material getScrollIcon(String scrollType) {
