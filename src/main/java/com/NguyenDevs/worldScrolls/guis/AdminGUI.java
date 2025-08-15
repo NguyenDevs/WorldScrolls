@@ -329,13 +329,55 @@ public class AdminGUI extends BaseGUI {
 
     private String replacePlaceholders(String text, ConfigurationSection config) {
         String result = text;
+
         for (String key : config.getKeys(false)) {
             if (!key.equals("name") && !key.equals("lore") && !key.equals("enabled") && !key.equals("craftable")) {
                 Object value = config.get(key);
-                if (value != null) result = result.replace("%" + key + "%", value.toString());
+                if (value != null) {
+                    result = result.replace("%" + key + "%", value.toString());
+                }
             }
         }
+
+        String scrollId = getScrollIdFromConfig(config);
+        if (scrollId != null) {
+            ConfigurationSection scrollSpecificConfig = configManager.getScrollConfig(scrollId);
+            if (scrollSpecificConfig != null) {
+                result = replaceFromScrollConfig(result, scrollSpecificConfig);
+            }
+        }
+
         return result;
+    }
+
+    private String replaceFromScrollConfig(String result, ConfigurationSection scrollConfig) {
+        return replaceConfigRecursive(result, scrollConfig, "");
+    }
+
+    private String replaceConfigRecursive(String text, ConfigurationSection section, String prefix) {
+        for (String key : section.getKeys(true)) {
+            if (!section.isConfigurationSection(key)) {
+                Object value = section.get(key);
+                if (value != null) {
+                    text = text.replace("%" + key + "%", value.toString());
+
+                    String[] parts = key.split("\\.");
+                    if (parts.length > 1) {
+                        String lastPart = parts[parts.length - 1];
+                        text = text.replace("%" + lastPart + "%", value.toString());
+                    }
+                }
+            }
+        }
+        return text;
+    }
+
+    private String getScrollIdFromConfig(ConfigurationSection config) {
+        String currentPath = config.getCurrentPath();
+        if (currentPath != null && currentPath.contains(".")) {
+            return currentPath.substring(currentPath.lastIndexOf(".") + 1);
+        }
+        return currentPath;
     }
 
     private List<String> getAvailableScrolls() {
