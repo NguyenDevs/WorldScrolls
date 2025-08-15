@@ -373,10 +373,12 @@ public class RecipeGUI extends BaseGUI implements Listener, InventoryHolder {
 
 
     private ItemStack createScrollResultItem(String scrollType) {
+        String SCROLL_FILE = scrollType;
+        ConfigurationSection scrollConfig2 = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
-        if (scrollConfig == null) return new ItemStack(Material.PAPER);
+        if (scrollConfig2 == null) return new ItemStack(Material.PAPER);
 
-        String materialName = scrollConfig.getString("material", "PAPER");
+        String materialName = scrollConfig2.getString("material", "PAPER");
         Material mat;
         try {
             mat = Material.valueOf(materialName.toUpperCase());
