@@ -237,6 +237,7 @@ public class AdminGUI extends BaseGUI {
     }
 
     private ItemStack createAdminScrollItem(String scrollType) {
+
         ConfigurationSection scrollConfig = configManager.getScrolls().getConfigurationSection(scrollType);
         if (scrollConfig == null) return new ItemStack(Material.PAPER);
 
@@ -268,8 +269,10 @@ public class AdminGUI extends BaseGUI {
     }
 
     private ItemStack createScrollItem(String scrollType, ConfigurationSection scrollConfig) {
+        String SCROLL_FILE = scrollType;
+        ConfigurationSection scrollConfig2 = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
         try {
-            String materialName = scrollConfig.getString("material", "PAPER");
+            String materialName = scrollConfig2.getString("material", "PAPER");
             Material mat;
             try {
                 mat = Material.valueOf(materialName.toUpperCase());
