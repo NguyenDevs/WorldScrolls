@@ -142,7 +142,7 @@ public class RecipeManager {
                 Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to add recipe for " + scrollId));
             }
         } catch (Exception e) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cException while adding recipe for " + scrollId + ": " + e.getMessage()));
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cException while adding recipe for " + scrollId + " " + e));
             e.printStackTrace();
         }
     }
@@ -156,7 +156,7 @@ public class RecipeManager {
                     Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &7Unregistered recipe for " + scrollId));
                 }
             } catch (Exception e) {
-                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cError unregistering recipe for " + scrollId + ": " + e.getMessage()));
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cError unregistering recipe for " + scrollId + " " + e));
             }
         }
     }

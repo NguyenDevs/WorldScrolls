@@ -2,6 +2,8 @@ package com.NguyenDevs.worldScrolls.managers;
 
 import com.NguyenDevs.worldScrolls.WorldScrolls;
 import com.NguyenDevs.worldScrolls.utils.ColorUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -66,7 +68,7 @@ public class ConfigManager {
             processConfigFile(configFile);
         }
 
-        plugin.getLogger().info("All configurations have been loaded successfully!");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aAll configurations have been loaded successfully!"));
     }
 
     private void processConfigFile(String fileName) {
@@ -74,21 +76,21 @@ public class ConfigManager {
         try {
             if (!configFile.exists()) {
                 copyResourceToFile(fileName, configFile);
-                plugin.getLogger().info("Created new config file: " + fileName);
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aCreated new config file: " + fileName));
             } else {
                 mergeConfigWithDefaults(fileName, configFile);
             }
             FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
             configs.put(fileName, config);
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to process config file: " + fileName, e);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to process config file: " + fileName) + " " + e);
         }
     }
 
     private void copyResourceToFile(String resourceName, File targetFile) throws IOException {
         try (InputStream inputStream = plugin.getResource(resourceName)) {
             if (inputStream == null) {
-                plugin.getLogger().warning("Resource not found: " + resourceName);
+                Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cResource not found: " + resourceName));
                 return;
             }
             Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -101,7 +103,7 @@ public class ConfigManager {
 
             try (InputStream defaultStream = plugin.getResource(fileName)) {
                 if (defaultStream == null) {
-                    plugin.getLogger().warning("Default resource not found: " + fileName);
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cDefault resource not found: " + fileName));
                     return;
                 }
 
@@ -113,11 +115,11 @@ public class ConfigManager {
 
                 if (hasChanges) {
                     existingConfig.save(configFile);
-                    plugin.getLogger().info("Updated config file with missing keys: " + fileName);
+                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aUpdated config file with missing keys: " + fileName));
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to merge config: " + fileName, e);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to merge config: " + fileName) + " " + e);
         }
     }
 
@@ -166,7 +168,7 @@ public class ConfigManager {
         configs.clear();
         initializeConfigs();
         reloadScrollConfigs();
-        plugin.getLogger().info("All configurations reloaded!");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aAll configurations reloaded!"));
     }
 
     public FileConfiguration getConfig(String fileName) {
@@ -247,14 +249,14 @@ public class ConfigManager {
     public void saveConfig(String fileName) {
         FileConfiguration config = configs.get(fileName);
         if (config == null) {
-            plugin.getLogger().warning("Configuration not found: " + fileName);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cConfiguration not found: " + fileName));
             return;
         }
         try {
             File configFile = new File(plugin.getDataFolder(), fileName);
             config.save(configFile);
         } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save config: " + fileName, e);
+            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cFailed to save config: " + fileName) + " " + e);
         }
     }
 
@@ -262,7 +264,7 @@ public class ConfigManager {
         for (String fileName : configs.keySet()) {
             saveConfig(fileName);
         }
-        plugin.getLogger().info("All configurations saved!");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aAll configurations saved!"));
     }
 
     public List<String> getStringList(String fileName, String path) {
