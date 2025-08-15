@@ -20,7 +20,6 @@ public class ConfigManager {
     private final WorldScrolls plugin;
     private final Map<String, FileConfiguration> configs = new HashMap<>();
 
-    // ✅ THÊM MỚI: Map để lưu scroll configs riêng biệt
     private final Map<String, ConfigurationSection> scrollConfigs = new HashMap<>();
 
     private final List<String> configFiles = new ArrayList<>(Arrays.asList(
