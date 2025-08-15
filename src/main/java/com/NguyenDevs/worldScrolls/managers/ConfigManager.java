@@ -20,6 +20,9 @@ public class ConfigManager {
     private final WorldScrolls plugin;
     private final Map<String, FileConfiguration> configs = new HashMap<>();
 
+    // ✅ THÊM MỚI: Map để lưu scroll configs riêng biệt
+    private final Map<String, ConfigurationSection> scrollConfigs = new HashMap<>();
+
     private final List<String> configFiles = new ArrayList<>(Arrays.asList(
             "config.yml",
             "messages.yml",
@@ -144,12 +147,34 @@ public class ConfigManager {
         return hasChanges;
     }
 
+    public ConfigurationSection getScrollConfig(String scrollName) {
+        if (scrollConfigs.containsKey(scrollName)) {
+            return scrollConfigs.get(scrollName);
+        }
+
+        File configFile = new File(plugin.getDataFolder(), "scrolls/" + scrollName + ".yml");
+        if (!configFile.exists()) {
+            plugin.saveResource("scrolls/" + scrollName + ".yml", false);
+        }
+
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+        scrollConfigs.put(scrollName, config);
+
+        return config;
+    }
+
+    public void reloadScrollConfigs() {
+        scrollConfigs.clear();
+    }
+
     public void reloadConfigs() {
         configs.clear();
         initializeConfigs();
+        reloadScrollConfigs();
         plugin.getLogger().info("All configurations reloaded!");
     }
 
+    // ✅ GIỮ NGUYÊN: Method getConfig hiện tại (trả về FileConfiguration)
     public FileConfiguration getConfig(String fileName) {
         return configs.get(fileName);
     }
