@@ -162,7 +162,17 @@ public class ConfigManager {
 
     public void reloadScrollConfigs() {
         scrollConfigs.clear();
+        for (String scrollFile : scrollConfigFiles) {
+            String scrollName = scrollFile.replace(".yml", "");
+            File configFile = new File(plugin.getDataFolder(), "scrolls/" + scrollFile);
+            if (!configFile.exists()) {
+                plugin.saveResource("scrolls/" + scrollFile, false);
+            }
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+            scrollConfigs.put(scrollName, config);
+        }
     }
+
 
     public void reloadConfigs() {
         configs.clear();
