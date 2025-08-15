@@ -262,7 +262,15 @@ public class WorldScrollsCommand implements CommandExecutor {
 
     private ItemStack createScrollItem(String scrollType, ConfigurationSection scrollConfig, int amount) {
         try {
-            ItemStack item = new ItemStack(Material.PAPER, amount);
+            String materialName = scrollConfig.getString("material", "PAPER");
+            Material mat;
+            try {
+                mat = Material.valueOf(materialName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                mat = Material.PAPER;
+            }
+
+            ItemStack item = new ItemStack(mat, amount);
             ItemMeta meta = item.getItemMeta();
 
             if (meta != null) {
@@ -298,6 +306,7 @@ public class WorldScrollsCommand implements CommandExecutor {
             return null;
         }
     }
+
 
 
     private String replacePlaceholders(String text, ConfigurationSection config) {
