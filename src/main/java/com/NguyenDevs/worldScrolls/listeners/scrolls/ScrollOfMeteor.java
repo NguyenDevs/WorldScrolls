@@ -83,18 +83,21 @@ public class ScrollOfMeteor implements Listener {
         this.scrollsConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_meteor");
     }
 
+    public void reloadConfigurations() {
+        loadConfigurations();
+
+    }
+
     @EventHandler
     public void onUse(org.bukkit.event.player.PlayerInteractEvent event) {
+        int minSpawn = (int) (scrollConfig.getDouble("min", 1.0));
+        int maxSpawn = (int) (scrollConfig.getDouble("max", 3.0));
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         String material = scrollConfig != null ? scrollConfig.getString("material", "PAPER") : "PAPER";
         if (item == null || item.getType() != Material.valueOf(material)) return;
         if (!isScrollOfMeteor(item)) return;
 
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR) return;
-
-        event.setCancelled(true);
 
         long now = System.currentTimeMillis();
         if (lastUseTime.containsKey(player.getUniqueId()) &&
@@ -103,9 +106,6 @@ public class ScrollOfMeteor implements Listener {
         }
 
         lastUseTime.put(player.getUniqueId(), now);
-
-        int minSpawn = (int) (scrollConfig != null ? scrollConfig.getDouble("min", 1.0) : 1.0);
-        int maxSpawn = (int) (scrollConfig != null ? scrollConfig.getDouble("max", 3.0) : 1.0);
         int cooldownSeconds = scrollsConfig != null ? scrollsConfig.getInt("cooldown", 0) : 0;
 
         if(cooldownSeconds > 0) {
@@ -502,8 +502,7 @@ public class ScrollOfMeteor implements Listener {
         }
 
         private void applyShockwaveAt(Location center) {
-            ConfigurationSection scrollConfig = plugin.getConfigManager().getScrolls().getConfigurationSection("scroll_of_meteor");
-            double baseDamage = scrollConfig != null ? scrollConfig.getDouble("damage") : 15 + 5.0 + meteorSize * 1.0;
+            double baseDamage = scrollConfig.getDouble("damage") + meteorSize * 1.0;
             World world = center.getWorld();
             double knockRadius = meteorSize * 2.5;
             for (Player player : world.getPlayers()) {
