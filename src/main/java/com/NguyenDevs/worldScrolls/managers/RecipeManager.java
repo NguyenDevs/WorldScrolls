@@ -41,10 +41,10 @@ public class RecipeManager {
             if (!scrollData.getBoolean("enabled", true) || !scrollData.getBoolean("craftable", true)) continue;
 
             String hash = generateRecipeHash(recipeData, scrollData);
-            if (hash.equals(recipeHashes.get(scrollId))) {
-                existingKeys.remove(scrollId);
-                continue;
-            }
+          //  if (hash.equals(recipeHashes.get(scrollId))) {
+              //  existingKeys.remove(scrollId);
+               // continue;
+          //  }
 
             unregisterRecipe(scrollId);
             registerRecipe(scrollId, recipeData, scrollData);
@@ -151,7 +151,7 @@ public class RecipeManager {
             try {
                 boolean removed = Bukkit.removeRecipe(recipe.getKey());
                 if (removed) {
-                    Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &7Unregistered recipe for " + scrollId));
+                   // Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &7Unregistered recipe for " + scrollId));
                 }
             } catch (Exception e) {
                 Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &cError unregistering recipe for " + scrollId + " " + e));
