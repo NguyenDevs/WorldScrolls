@@ -214,6 +214,9 @@ public class WorldScrollsCommand implements CommandExecutor {
         
         try {
             configManager.reloadConfigs();
+            plugin.getScrollOfMeteor().reloadConfigurations();
+            plugin.getScrollOfExit().reloadConfigurations();
+
             recipeManager.loadRecipes();
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("plugin-reloaded"));
 
@@ -262,7 +265,9 @@ public class WorldScrollsCommand implements CommandExecutor {
 
     private ItemStack createScrollItem(String scrollType, ConfigurationSection scrollConfig, int amount) {
         try {
-            String materialName = scrollConfig.getString("material", "PAPER");
+            String SCROLL_FILE = scrollType;
+            ConfigurationSection scrollConfig2 = plugin.getConfigManager().getScrollConfig(SCROLL_FILE);
+            String materialName = scrollConfig2.getString("material", "PAPER");
             Material mat;
             try {
                 mat = Material.valueOf(materialName.toUpperCase());
