@@ -9,8 +9,6 @@ scroll_of_thorn:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  immobilize: 5
-  poison: 3
   cooldown: 5
 
 scroll_of_cyclone:
@@ -24,7 +22,6 @@ scroll_of_cyclone:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  duration: 6
   cooldown: 5
 
 scroll_of_exit:
@@ -32,13 +29,12 @@ scroll_of_exit:
   name: "<gradient:#7d7675:#e48aff>Scroll Of Exit</gradient>"
   lore:
     - "&5Magic Scroll: &3Defense&7/&aActive"
-    - "&7%cast% seconds after use. will be immediately teleported"
+    - "&7%cast-time% seconds after use. will be immediately teleported"
     - "&7to the designated location."
     - " "
     - "&f► &eLeft-Click &7to save exit point."
     - "&f► &eRight-Click &7to use."
   craftable: true
-  cast: 0.5
   cooldown: 5
 
 scroll_of_frostbite:
@@ -52,8 +48,6 @@ scroll_of_frostbite:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  freeze: 5
-  slow: 5
   cooldown: 5
 
 scroll_of_gravitation:
@@ -68,8 +62,6 @@ scroll_of_gravitation:
     - "&f► &eLeft-Click &7to pull back enemies to designated location."
     - "&f► &eRight-Click &7to pull you to designated location."
   craftable: true
-  pull-range: 6
-  max-range: 20
   cooldown: 5
 
 scroll_of_invisibility:
@@ -83,8 +75,6 @@ scroll_of_invisibility:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  duration: 480
-  auto-active-hp: 6
   cooldown: 5
 
 scroll_of_meteor:
@@ -97,9 +87,6 @@ scroll_of_meteor:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  min: 1
-  max: 5
-  damage: 15
   cooldown: 120
 
 scroll_of_phoenix:
@@ -113,10 +100,6 @@ scroll_of_phoenix:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  hp: 3
-  range: 4
-  duration: 10
-  auto-active-hp: 6
   cooldown: 60
 
 scroll_of_radiation:
@@ -131,9 +114,6 @@ scroll_of_radiation:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  min: 1
-  max: 3
-  range: 5
   cooldown: 60
 
 scroll_of_solar:
@@ -148,11 +128,6 @@ scroll_of_solar:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  damage: 2
-  range: 6
-  point: 1
-  duration: 60
-  resistance: 200
   cooldown: 5
 
 scroll_of_thunder:
@@ -167,7 +142,4 @@ scroll_of_thunder:
     - " "
     - "&f► &eRight-Click &7to use."
   craftable: true
-  range: 10
-  delay: 1
-  add: 5
   cooldown: 5
