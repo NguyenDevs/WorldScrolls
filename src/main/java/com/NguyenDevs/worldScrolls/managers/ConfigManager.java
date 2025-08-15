@@ -67,8 +67,6 @@ public class ConfigManager {
         for (String configFile : configFiles) {
             processConfigFile(configFile);
         }
-
-        //Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aAll configurations have been loaded successfully!"));
     }
 
     private void processConfigFile(String fileName) {
@@ -178,7 +176,6 @@ public class ConfigManager {
         configs.clear();
         initializeConfigs();
         reloadScrollConfigs();
-        //Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aAll configurations reloaded!"));
     }
 
     public FileConfiguration getConfig(String fileName) {
