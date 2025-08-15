@@ -49,23 +49,19 @@ public class ConfigManager {
     }
 
     public void initializeConfigs() {
-        // Tạo folder plugin
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdirs();
         }
 
-        // Tạo folder scrolls
         File scrollsFolder = new File(plugin.getDataFolder(), "scrolls");
         if (!scrollsFolder.exists()) {
             scrollsFolder.mkdirs();
         }
 
-        // Thêm các file scrolls/... vào danh sách configFiles
         for (String scrollFile : scrollConfigFiles) {
             configFiles.add("scrolls/" + scrollFile);
         }
 
-        // Xử lý tất cả file config
         for (String configFile : configFiles) {
             processConfigFile(configFile);
         }
@@ -173,7 +169,6 @@ public class ConfigManager {
         plugin.getLogger().info("All configurations reloaded!");
     }
 
-    // ✅ GIỮ NGUYÊN: Method getConfig hiện tại (trả về FileConfiguration)
     public FileConfiguration getConfig(String fileName) {
         return configs.get(fileName);
     }
@@ -215,7 +210,6 @@ public class ConfigManager {
         return getScrollMessage(scrollFileName, path, null);
     }
 
-    // ==== Các hàm cũ giữ nguyên ====
     public String getMessage(String path) {
         FileConfiguration messages = getMessages();
         if (messages == null) return "Message not found: " + path;
