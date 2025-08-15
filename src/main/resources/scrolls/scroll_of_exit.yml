@@ -7,41 +7,26 @@ sounds:
     sound: "BLOCK_ENCHANTMENT_TABLE_USE"
     volume: 0.7
     pitch: 1.2
-
   lock-sound:
     sound: "ITEM_LODESTONE_COMPASS_LOCK"
     volume: 0.5
     pitch: 0.1
-
   cancel-sound:
     sound: "BLOCK_BEACON_POWER_SELECT"
     volume: 0.5
     pitch: 0.1
-
   teleport-from-sound:
     sound: "ENTITY_ENDERMAN_TELEPORT"
     volume: 1.0
     pitch: 1.0
-
   teleport-to-sound:
     sound: "ENTITY_ENDERMAN_TELEPORT"
     volume: 1.0
     pitch: 1.2
-
   success-sound:
     sound: "BLOCK_PORTAL_TRIGGER"
     volume: 0.1
     pitch: 1.5
-
-  sink-sound:
-    sound: "BLOCK_GRAVEL_BREAK"
-    volume: 0.8
-    pitch: 0.8
-
-  restore-sound:
-    sound: "BLOCK_STONE_PLACE"
-    volume: 0.6
-    pitch: 1.1
 
 particles:
   save-particles:
