@@ -216,6 +216,8 @@ public class WorldScrollsCommand implements CommandExecutor {
             configManager.reloadConfigs();
             plugin.getScrollOfMeteor().reloadConfigurations();
             plugin.getScrollOfExit().reloadConfigurations();
+            plugin.getScrollOfGravitation().reloadConfigurations();
+
 
             recipeManager.loadRecipes();
             sender.sendMessage(configManager.getMessage("prefix") + " " + configManager.getMessage("plugin-reloaded"));
