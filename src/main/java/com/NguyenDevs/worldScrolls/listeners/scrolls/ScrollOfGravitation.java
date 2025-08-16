@@ -367,26 +367,30 @@ public class ScrollOfGravitation implements Listener {
             }
         }
 
-        double minRadius = 0.5;
-        double maxRadius = 6.0 * progress;
+        double startRadius = 0.8;
+        double endRadius = 6.0;
         double maxDepth = 1.8 * progress;
 
-        if (maxRadius < minRadius) {
-            maxRadius = minRadius;
-        }
+        double currentMaxRadius = startRadius + (endRadius - startRadius) * progress;
 
-        int ringCount = Math.max(1, (int) (12 * progress));
-        for (int ring = 1; ring <= ringCount; ring++) {
-            double normalizedRing = (double) ring / 12.0;
-            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
-            drawAnimatedCircleOnPlane(targetInfo, radius, 0.08, maxDepth, u, v, normal);
+        int totalRings = 12;
+        int currentRingCount = Math.max(1, (int) (totalRings * progress));
+
+        for (int ring = 1; ring <= currentRingCount; ring++) {
+            double ringProgress = (double) ring / totalRings;
+
+            if (ringProgress <= progress) {
+                double radius = startRadius + (currentMaxRadius - startRadius) * ringProgress;
+                drawAnimatedCircleOnPlane(targetInfo, radius, 0.08, maxDepth, u, v, normal);
+            }
         }
 
         if (progress > 0.3) {
-            int lineCount = Math.max(4, (int) (16 * (progress - 0.3) / 0.7));
-            for (int i = 0; i < lineCount; i++) {
+            int totalLines = 16;
+            int currentLineCount = Math.max(4, (int) (totalLines * ((progress - 0.3) / 0.7)));
+            for (int i = 0; i < currentLineCount; i++) {
                 double angle = i * Math.PI / 8.0;
-                drawAnimatedRadialLine(targetInfo, angle, maxRadius, minRadius, 0.12, maxDepth, u, v, normal);
+                drawAnimatedRadialLine(targetInfo, angle, currentMaxRadius, startRadius, 0.12, maxDepth, u, v, normal);
             }
         }
 
@@ -396,7 +400,7 @@ public class ScrollOfGravitation implements Listener {
         }
 
         if (progress > 0.4) {
-            drawAnimatedCrossLines(targetInfo, maxRadius, minRadius, 0.15, maxDepth, u, v, normal);
+            drawAnimatedCrossLines(targetInfo, currentMaxRadius, startRadius, 0.15, maxDepth, u, v, normal);
         }
     }
 
