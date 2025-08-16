@@ -7,8 +7,7 @@ import com.NguyenDevs.worldScrolls.comp.WorldGuardOff;
 import com.NguyenDevs.worldScrolls.comp.WorldGuardOn;
 import com.NguyenDevs.worldScrolls.guis.PlayerGUI;
 import com.NguyenDevs.worldScrolls.listeners.PlayerListener;
-import com.NguyenDevs.worldScrolls.listeners.scrolls.ScrollOfExit;
-import com.NguyenDevs.worldScrolls.listeners.scrolls.ScrollOfMeteor;
+import com.NguyenDevs.worldScrolls.listeners.scrolls.*;
 import com.NguyenDevs.worldScrolls.managers.ConfigManager;
 import com.NguyenDevs.worldScrolls.managers.GUIManager;
 import com.NguyenDevs.worldScrolls.managers.RecipeManager;
@@ -33,6 +32,7 @@ public final class WorldScrolls extends JavaPlugin {
     private boolean worldGuardReady = false;
     private ScrollOfMeteor scrollOfMeteor;
     private ScrollOfExit scrollOfExit;
+    private ScrollOfGravitation scrollOfGravitation;
 
     @Override
     public void onLoad() {
@@ -80,6 +80,8 @@ public final class WorldScrolls extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(scrollOfExit, this);
         scrollOfMeteor = new ScrollOfMeteor(this);
         Bukkit.getPluginManager().registerEvents(scrollOfMeteor, this);
+        scrollOfGravitation = new ScrollOfGravitation(this);
+        Bukkit.getPluginManager().registerEvents(scrollOfGravitation, this);
     }
     
     private void registerCommands() {
@@ -116,7 +118,7 @@ public final class WorldScrolls extends JavaPlugin {
     public ScrollOfExit getScrollOfExit() {
         return scrollOfExit;
     }
-    
+    public ScrollOfGravitation getScrollOfGravitation() { return scrollOfGravitation; }
     public GUIManager getGUIManager() {
         return guiManager;
     }
