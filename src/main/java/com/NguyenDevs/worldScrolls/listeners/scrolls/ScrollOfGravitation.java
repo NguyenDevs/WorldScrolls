@@ -227,7 +227,7 @@ public class ScrollOfGravitation implements Listener {
         Location castLocation = player.getLocation().clone();
 
         BukkitTask gravitationTask = startGravitationEffect(player, castLocation);
-        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime);
+        BukkitTask targetGridTask = startAnimatedTargetGridEffect(targetInfo, castTime);
 
         BukkitTask castTask = new BukkitRunnable() {
             int ticks = 0;
@@ -272,7 +272,7 @@ public class ScrollOfGravitation implements Listener {
         Location castLocation = player.getLocation().clone();
 
         BukkitTask gravitationTask = startGravitationEffect(player, castLocation);
-        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime);
+        BukkitTask targetGridTask = startAnimatedTargetGridEffect(targetInfo, castTime);
 
         BukkitTask castTask = new BukkitRunnable() {
             int ticks = 0;
@@ -331,16 +331,10 @@ public class ScrollOfGravitation implements Listener {
         }.runTaskTimer(plugin, 0L, 2L);
     }
 
-
-
-
-
-
-    private BukkitTask startTargetGridEffect(TargetInfo targetInfo, double duration) {
+    private BukkitTask startAnimatedTargetGridEffect(TargetInfo targetInfo, double duration) {
         return new BukkitRunnable() {
             int ticks = 0;
             final int maxTicks = (int) (duration * 20);
-            final double maxRadius = 6.0; // Tăng radius để có nhiều vòng hơn
 
             @Override
             public void run() {
@@ -349,178 +343,108 @@ public class ScrollOfGravitation implements Listener {
                     return;
                 }
 
-                double minRadius = 0.8;
-                for (int ring = 1; ring <= 12; ring++) {
-                    double normalizedRing = (double) ring / 12.0;
-                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
-
-                    drawThinCircleOnPlane(targetInfo, radius, 0.08);
-                }
-
-                double minRadius2 = 0.8;
-                for (int i = 0; i < 16; i++) {
-                    double angle = i * Math.PI / 8.0;
-                    drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius2, 0.12);
-                }
-                createBlackHoleEdge(targetInfo, ticks);
-
-                drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius2, 0.15);
-
-                if (ticks % 10 == 0) {
-                    double pulseIntensity = 1.0 + Math.sin(ticks * 0.2) * 0.5;
-                    double holeEdgeRadius = 0.8;
-
-                    for (int i = 0; i < 8; i++) {
-                        double angle = i * Math.PI / 4 + ticks * 0.05;
-                        double x = holeEdgeRadius * Math.cos(angle);
-                        double z = holeEdgeRadius * Math.sin(angle);
-
-                        Vector normal = targetInfo.normal;
-                        Vector u, v;
-                        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-                            u = new Vector(1, 0, 0);
-                            v = new Vector(0, 0, 1);
-                        } else {
-                            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                                u = new Vector(0, 1, 0);
-                                v = new Vector(0, 0, 1);
-                            } else {
-                                u = new Vector(1, 0, 0);
-                                v = new Vector(0, 1, 0);
-                            }
-                        }
-
-                        Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
-                        Vector depthOffset = normal.clone().multiply(-1.2); // Depth ở viền lỗ
-                        Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-                        targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
-                                0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 1.5f));
-                    }
-                }
-
+                double progress = (double) ticks / maxTicks;
+                drawAnimatedGravityField(targetInfo, progress);
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 3L); // Giảm tần suất update để mượt hơn
+        }.runTaskTimer(plugin, 0L, 3L);
     }
 
+    private void drawAnimatedGravityField(TargetInfo targetInfo, double progress) {
+        Vector normal = targetInfo.normal;
+        Vector u, v;
 
-    private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        double minRadius = 0.5;
+        double maxRadius = 6.0 * progress;
+        double maxDepth = 1.8 * progress;
+
+        if (maxRadius < minRadius) {
+            maxRadius = minRadius;
+        }
+
+        int ringCount = Math.max(1, (int) (12 * progress));
+        for (int ring = 1; ring <= ringCount; ring++) {
+            double normalizedRing = (double) ring / 12.0;
+            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+            drawAnimatedCircleOnPlane(targetInfo, radius, 0.08, maxDepth, u, v, normal);
+        }
+
+        if (progress > 0.3) {
+            int lineCount = Math.max(4, (int) (16 * (progress - 0.3) / 0.7));
+            for (int i = 0; i < lineCount; i++) {
+                double angle = i * Math.PI / 8.0;
+                drawAnimatedRadialLine(targetInfo, angle, maxRadius, minRadius, 0.12, maxDepth, u, v, normal);
+            }
+        }
+
+        if (progress > 0.5) {
+            double holeProgress = (progress - 0.5) / 0.5;
+            createAnimatedBlackHoleEdge(targetInfo, (int) (System.currentTimeMillis() / 50), holeProgress, u, v, normal, maxDepth);
+        }
+
+        if (progress > 0.4) {
+            drawAnimatedCrossLines(targetInfo, maxRadius, minRadius, 0.15, maxDepth, u, v, normal);
+        }
+    }
+
+    private void drawAnimatedCircleOnPlane(TargetInfo targetInfo, double radius, double density, double maxDepth,
+                                           Vector u, Vector v, Vector normal) {
         double circumference = 2 * Math.PI * radius;
         int points = Math.max(8, (int) (circumference / density));
 
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        // Xác định hệ tọa độ địa phương
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
         for (int i = 0; i < points; i++) {
             double angle = (2 * Math.PI * i) / points;
             double localX = radius * Math.cos(angle);
             double localY = radius * Math.sin(angle);
 
-            // Tạo hiệu ứng lõm sâu hơn - càng gần viền lỗ càng sâu
             double holeRadius = 0.8;
             double distanceFromHole = Math.abs(radius - holeRadius);
-            double maxDistanceFromHole = 6.0 - holeRadius; // maxRadius - holeRadius
+            double maxDistanceFromHole = Math.max(0.1, 6.0 - holeRadius);
 
             double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-            double depth = depthRatio * depthRatio * 1.8; // Tăng độ sâu
+            double depth = depthRatio * depthRatio * maxDepth;
 
             Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
             Vector depthOffset = normal.clone().multiply(-depth);
             Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
 
-            // Sử dụng particle nhỏ hơn với màu đậm hơn
             Color ringColor = Color.fromRGB(
-                    (int)(10 + radius * 3),
-                    (int)(10 + radius * 3),
-                    (int)(10 + radius * 3)
+                    (int) (10 + radius * 3),
+                    (int) (10 + radius * 3),
+                    (int) (10 + radius * 3)
             );
 
             targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f)); // Giảm size từ 1.0f xuống 0.6f
+                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
         }
     }
 
-
-    private void drawCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
-        double circumference = 2 * Math.PI * radius;
-        int points = Math.max(6, (int) (circumference / density));
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = radius * Math.cos(angle);
-            double localY = radius * Math.sin(angle);
-
-            double depthRatio = 1.0 - (radius / 4.0);
-            double depth = depthRatio * 0.8;
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(20, 20, 20), 1.0f));
-        }
-    }
-
-    private void drawRadialLineWithDepth(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density) {
+    private void drawAnimatedRadialLine(TargetInfo targetInfo, double angle, double maxLength, double minLength,
+                                        double density, double maxDepth, Vector u, Vector v, Vector normal) {
         int points = (int) ((maxLength - minLength) / density);
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
 
         for (int i = 1; i <= points; i++) {
             double distance = minLength + ((maxLength - minLength) * i) / points;
             double localX = distance * Math.cos(angle);
             double localY = distance * Math.sin(angle);
 
-            // Tạo độ sâu tăng dần về phía viền lỗ
             double distanceFromHole = Math.abs(distance - minLength);
             double maxDistanceFromHole = maxLength - minLength;
             double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-            double depth = depthRatio * depthRatio * 1.4;
+            double depth = depthRatio * depthRatio * maxDepth * 0.78;
 
             Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
             Vector depthOffset = normal.clone().multiply(-depth);
@@ -531,48 +455,31 @@ public class ScrollOfGravitation implements Listener {
         }
     }
 
-
-    private void createBlackHoleEdge(TargetInfo targetInfo, int ticks) {
-        Vector normal = targetInfo.normal;
+    private void createAnimatedBlackHoleEdge(TargetInfo targetInfo, int ticks, double progress,
+                                             Vector u, Vector v, Vector normal, double maxDepth) {
         double holeRadius = 0.8;
+        int particleCount = Math.max(6, (int) (12 * progress));
 
-        // Tạo hiệu ứng viền lỗ với particle xoay
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < particleCount; i++) {
             double angle = i * Math.PI / 6 + ticks * 0.08;
             double x = holeRadius * Math.cos(angle);
             double z = holeRadius * Math.sin(angle);
 
-            Vector u, v;
-            if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                    u = new Vector(0, 1, 0);
-                    v = new Vector(0, 0, 1);
-                } else {
-                    u = new Vector(1, 0, 0);
-                    v = new Vector(0, 1, 0);
-                }
-            }
-
             Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
-            Vector depthOffset = normal.clone().multiply(-1.5); // Sâu nhất ở viền lỗ
+            Vector depthOffset = normal.clone().multiply(-maxDepth * 0.83);
             Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
 
-            // Particle tối ở viền lỗ
             targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
                     0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(3, 3, 3), 0.7f));
 
-            // Thêm hiệu ứng xoáy nhỏ
-            if (ticks % 6 == 0) {
+            if (ticks % 6 == 0 && progress > 0.7) {
                 double innerAngle = angle + Math.PI / 12;
                 double innerRadius = holeRadius * 0.7;
                 double innerX = innerRadius * Math.cos(innerAngle);
                 double innerZ = innerRadius * Math.sin(innerAngle);
 
                 Vector innerPos = u.clone().multiply(innerX).add(v.clone().multiply(innerZ));
-                Vector innerDepthOffset = normal.clone().multiply(-1.3);
+                Vector innerDepthOffset = normal.clone().multiply(-maxDepth * 0.72);
                 Location innerPoint = targetInfo.location.clone().add(innerPos).add(innerDepthOffset);
 
                 targetInfo.location.getWorld().spawnParticle(Particle.SPELL_WITCH, innerPoint, 1,
@@ -581,23 +488,8 @@ public class ScrollOfGravitation implements Listener {
         }
     }
 
-    private void drawCrossLinesWithDepth(TargetInfo targetInfo, double maxLength, double minLength, double density) {
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
+    private void drawAnimatedCrossLines(TargetInfo targetInfo, double maxLength, double minLength,
+                                        double density, double maxDepth, Vector u, Vector v, Vector normal) {
         Vector[] directions = {u, u.clone().multiply(-1), v, v.clone().multiply(-1)};
 
         for (Vector direction : directions) {
@@ -605,11 +497,10 @@ public class ScrollOfGravitation implements Listener {
             for (int i = 1; i <= points; i++) {
                 double distance = minLength + ((maxLength - minLength) * i) / points;
 
-                // Độ sâu tăng theo hàm bậc 3 gần viền lỗ
                 double distanceFromHole = Math.abs(distance - minLength);
                 double maxDistanceFromHole = maxLength - minLength;
                 double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-                double depth = depthRatio * depthRatio * depthRatio * 1.2;
+                double depth = depthRatio * depthRatio * depthRatio * maxDepth * 0.67;
 
                 Vector pos = direction.clone().multiply(distance);
                 Vector depthOffset = normal.clone().multiply(-depth);
