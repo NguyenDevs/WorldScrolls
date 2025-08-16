@@ -5,6 +5,7 @@ import com.NguyenDevs.worldScrolls.utils.ColorUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -19,7 +20,6 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -68,7 +68,6 @@ public class ScrollOfGravitation implements Listener {
 
     private void handlePullEnemies(PlayerInteractEvent event, Player player, ItemStack item) {
         event.setCancelled(true);
-
         if (isOnCooldown(player)) return;
 
         TargetInfo targetInfo = getTargetLocationWithFace(player);
@@ -77,23 +76,116 @@ public class ScrollOfGravitation implements Listener {
             playSound(player, "cancel-sound");
             return;
         }
-
         if (activeCasts.containsKey(player.getUniqueId())) {
             sendMessage(player, "already-casting");
             return;
         }
 
         double castTime = scrollConfig != null ? scrollConfig.getDouble("cast-time", 2.0) : 2.0;
-        if (castTime > 0) {
-            startPullEnemiesProcess(player, item, targetInfo, castTime);
-        } else {
-            executePullEnemies(player, item, targetInfo.location);
+        if (castTime <= 0) castTime = 0.1;
+
+        sendMessage(player, "prepare-pull-enemies");
+        Location castLocation = player.getLocation().clone();
+
+        BukkitTask gravitationTask = startGravitationEffect(player, castLocation);
+        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime, 1.0);
+
+        double pullRange = scrollConfig != null ? scrollConfig.getDouble("pull-range", 8.0) : 8.0;
+        double pullTickStrength = scrollConfig != null ? scrollConfig.getDouble("cast-pull-strength", 1.2) : 1.2;
+
+        double finalCastTime = castTime;
+        BukkitTask pullTask = new BukkitRunnable() {
+            int ticks = 0;
+            final int totalTicks = (int) (finalCastTime * 20);
+
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                if (player.getLocation().distance(castLocation) > 1.0) {
+                    sendMessage(player, "pull-cancelled");
+                    playSound(player, "cancel-sound");
+                    cancel();
+                    return;
+                }
+                pullEntitiesTowards(targetInfo.location, pullRange, pullTickStrength, player);
+                if (ticks % 15 == 0) {
+                    player.getWorld().playSound(
+                            targetInfo.location,
+                            Sound.BLOCK_BEACON_POWER_SELECT,
+                            0.5f,
+                            0.1f
+                    );
+                }
+
+                ticks++;
+                if (ticks >= totalTicks) {
+                    finishEnemiesCast(player, item, targetInfo.location, pullRange);
+                    cancel();
+                }
+            }
+
+            @Override
+            public synchronized void cancel() throws IllegalStateException {
+                super.cancel();
+                gravitationTask.cancel();
+                targetGridTask.cancel();
+                activeCasts.remove(player.getUniqueId());
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+
+        activeCasts.put(player.getUniqueId(), pullTask);
+    }
+
+    private void finishEnemiesCast(Player player, ItemStack item, Location targetLocation, double pullRange) {
+        World w = targetLocation.getWorld();
+        if (w == null) return;
+
+        List<LivingEntity> enemies = new ArrayList<>();
+        for (Entity entity : w.getNearbyEntities(targetLocation, pullRange, pullRange, pullRange)) {
+            if (entity instanceof Monster || (entity instanceof LivingEntity && entity != player && !(entity instanceof Player))) {
+                enemies.add((LivingEntity) entity);
+            }
         }
+
+        for (LivingEntity e : enemies) {
+            SoundConfig sc = getSoundConfig("pull-enemies-sound", "ENTITY_PLAYER_ATTACK_SWEEP", 1.0f, 1.0f);
+            w.playSound(e.getLocation(), sc.sound, sc.volume, sc.pitch);
+            double hp = e.getHealth();
+            double dmg = Math.max(0.0, hp / 3.0);
+            if (dmg > 0) e.damage(dmg, player);
+
+            Vector knockback = targetLocation.getDirection().normalize().multiply(1.2).add(new Vector(0, 0.3, 0));
+            e.setVelocity(knockback);
+        }
+        w.spawnParticle(
+                Particle.REDSTONE,
+                targetLocation.clone().add(0, 0.2, 0),
+                30,
+                0.3, 0.3, 0.3,
+                0.01,
+                new Particle.DustOptions(Color.fromRGB(255, 255, 255), 1.2f)
+        );
+        w.spawnParticle(
+                Particle.CRIT_MAGIC,
+                targetLocation.clone().add(0, 0.2, 0),
+                20,
+                0.2, 0.2, 0.2,
+                0.05
+        );
+
+
+        playSound(player, "success-sound");
+        Map<String, String> placeholders = locPlaceholders(targetLocation);
+        placeholders.put("enemy-count", String.valueOf(enemies.size()));
+        sendMessage(player, "pulled-enemies", placeholders);
+        consumeScroll(player, item);
     }
 
     private void handlePullSelf(PlayerInteractEvent event, Player player, ItemStack item) {
         event.setCancelled(true);
-
         if (isOnCooldown(player)) return;
 
         TargetInfo targetInfo = getTargetLocationWithFace(player);
@@ -134,14 +226,6 @@ public class ScrollOfGravitation implements Listener {
             this.face = face;
             this.normal = normal;
         }
-    }
-
-    private Location getTargetLocation(Player player) {
-        Block targetBlock = player.getTargetBlockExact(100);
-        if (targetBlock != null && targetBlock.getType() != Material.AIR) {
-            return targetBlock.getLocation().add(0.5, 1, 0.5);
-        }
-        return null;
     }
 
     private TargetInfo getTargetLocationWithFace(Player player) {
@@ -222,57 +306,12 @@ public class ScrollOfGravitation implements Listener {
         return false;
     }
 
-    private void startPullEnemiesProcess(Player player, ItemStack item, TargetInfo targetInfo, double castTime) {
-        sendMessage(player, "prepare-pull-enemies");
-        Location castLocation = player.getLocation().clone();
-
-        BukkitTask gravitationTask = startGravitationEffect(player, castLocation);
-        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime);
-
-        BukkitTask castTask = new BukkitRunnable() {
-            int ticks = 0;
-            final int totalTicks = (int) (castTime * 20);
-
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    gravitationTask.cancel();
-                    targetGridTask.cancel();
-                    activeCasts.remove(player.getUniqueId());
-                    cancel();
-                    return;
-                }
-
-                if (player.getLocation().distance(castLocation) > 1.0) {
-                    sendMessage(player, "pull-cancelled");
-                    playSound(player, "cancel-sound");
-                    gravitationTask.cancel();
-                    targetGridTask.cancel();
-                    activeCasts.remove(player.getUniqueId());
-                    cancel();
-                    return;
-                }
-
-                ticks++;
-                if (ticks >= totalTicks) {
-                    gravitationTask.cancel();
-                    targetGridTask.cancel();
-                    executePullEnemies(player, item, targetInfo.location);
-                    activeCasts.remove(player.getUniqueId());
-                    cancel();
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
-
-        activeCasts.put(player.getUniqueId(), castTask);
-    }
-
     private void startPullSelfProcess(Player player, ItemStack item, TargetInfo targetInfo, double castTime) {
         sendMessage(player, "prepare-pull-self");
         Location castLocation = player.getLocation().clone();
 
         BukkitTask gravitationTask = startGravitationEffect(player, castLocation);
-        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime);
+        BukkitTask targetGridTask = startTargetGridEffect(targetInfo, castTime, 0.45);
 
         BukkitTask castTask = new BukkitRunnable() {
             int ticks = 0;
@@ -331,16 +370,11 @@ public class ScrollOfGravitation implements Listener {
         }.runTaskTimer(plugin, 0L, 2L);
     }
 
-
-
-
-
-
-    private BukkitTask startTargetGridEffect(TargetInfo targetInfo, double duration) {
+    private BukkitTask startTargetGridEffect(TargetInfo targetInfo, double duration, double scale) {
         return new BukkitRunnable() {
             int ticks = 0;
             final int maxTicks = (int) (duration * 20);
-            final double maxRadius = 6.0;
+            final double baseMaxRadius = 6.0;
 
             @Override
             public void run() {
@@ -349,14 +383,53 @@ public class ScrollOfGravitation implements Listener {
                     return;
                 }
 
-                double progress = (double) ticks / maxTicks;
+                double maxRadius = baseMaxRadius * scale;
+                double minRadius = 0.8 * scale;
+                for (int ring = 1; ring <= 12; ring++) {
+                    double normalizedRing = (double) ring / 12.0;
+                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+                    drawThinCircleOnPlane(targetInfo, radius, 0.08);
+                }
 
-                if (progress <= 0.5) {
-                    drawExpandingGrid(targetInfo, progress);
-                } else if (progress <= 0.75) {
-                    drawExpandingGridWithDepth(targetInfo, progress);
-                } else {
-                    drawFullEffectWithBlackHole(targetInfo, progress);
+                double minRadius2 = 0.8 * scale;
+                for (int i = 0; i < 16; i++) {
+                    double angle = i * Math.PI / 8.0;
+                    drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius2, 0.12, scale);
+                }
+                createBlackHoleEdge(targetInfo, ticks, scale);
+
+                drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius2, 0.15, scale);
+
+                if (ticks % 10 == 0) {
+                    double holeEdgeRadius = 0.8 * scale;
+
+                    for (int i = 0; i < 8; i++) {
+                        double angle = i * Math.PI / 4 + ticks * 0.05;
+                        double x = holeEdgeRadius * Math.cos(angle);
+                        double z = holeEdgeRadius * Math.sin(angle);
+
+                        Vector normal = targetInfo.normal;
+                        Vector u, v;
+                        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+                            u = new Vector(1, 0, 0);
+                            v = new Vector(0, 0, 1);
+                        } else {
+                            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                                u = new Vector(0, 1, 0);
+                                v = new Vector(0, 0, 1);
+                            } else {
+                                u = new Vector(1, 0, 0);
+                                v = new Vector(0, 1, 0);
+                            }
+                        }
+
+                        Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
+                        Vector depthOffset = normal.clone().multiply(-1.2);
+                        Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+                        targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
+                                0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 1.5f));
+                    }
                 }
 
                 ticks++;
@@ -364,207 +437,7 @@ public class ScrollOfGravitation implements Listener {
         }.runTaskTimer(plugin, 0L, 3L);
     }
 
-    private void drawExpandingGrid(TargetInfo targetInfo, double progress) {
-        double currentMaxRadius = 6.0 * progress * 2.0;
-        if (currentMaxRadius < 0.8) currentMaxRadius = 0.8;
-
-        double minRadius = 0.8;
-        int maxRings = (int) (12 * progress * 2.0);
-        if (maxRings < 1) maxRings = 1;
-
-        for (int ring = 1; ring <= maxRings; ring++) {
-            double normalizedRing = (double) ring / 12.0;
-            double radius = minRadius + (currentMaxRadius - minRadius) * normalizedRing;
-
-            drawFlatCircleOnPlane(targetInfo, radius, 0.08);
-        }
-
-        int maxLines = (int) (16 * progress * 2.0);
-        if (maxLines < 4) maxLines = 4;
-
-        for (int i = 0; i < maxLines; i++) {
-            double angle = i * Math.PI / 8.0;
-            drawFlatRadialLine(targetInfo, angle, currentMaxRadius, minRadius, 0.12);
-        }
-
-        drawFlatCrossLines(targetInfo, currentMaxRadius, minRadius, 0.15);
-    }
-
-    private void drawExpandingGridWithDepth(TargetInfo targetInfo, double progress) {
-        double depthProgress = (progress - 0.5) / 0.25;
-        double maxRadius = 6.0;
-        double minRadius = 0.8;
-
-        for (int ring = 1; ring <= 12; ring++) {
-            double normalizedRing = (double) ring / 12.0;
-            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
-
-            drawTransitionCircleOnPlane(targetInfo, radius, 0.08, depthProgress);
-        }
-
-        for (int i = 0; i < 16; i++) {
-            double angle = i * Math.PI / 8.0;
-            drawTransitionRadialLine(targetInfo, angle, maxRadius, minRadius, 0.12, depthProgress);
-        }
-
-        drawTransitionCrossLines(targetInfo, maxRadius, minRadius, 0.15, depthProgress);
-    }
-
-    private void drawFullEffectWithBlackHole(TargetInfo targetInfo, double progress) {
-        double maxRadius = 6.0;
-        double minRadius = 0.8;
-
-        for (int ring = 1; ring <= 12; ring++) {
-            double normalizedRing = (double) ring / 12.0;
-            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
-
-            drawThinCircleOnPlane(targetInfo, radius, 0.08);
-        }
-
-        for (int i = 0; i < 16; i++) {
-            double angle = i * Math.PI / 8.0;
-            drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius, 0.12);
-        }
-
-        int currentTick = (int) (progress * (10.0 * 20));
-        createBlackHoleEdge(targetInfo, currentTick);
-
-        drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius, 0.15);
-
-        if (currentTick % 10 == 0) {
-            double pulseIntensity = 1.0 + Math.sin(currentTick * 0.2) * 0.5;
-            double holeEdgeRadius = 0.8;
-
-            for (int i = 0; i < 8; i++) {
-                double angle = i * Math.PI / 4 + currentTick * 0.05;
-                double x = holeEdgeRadius * Math.cos(angle);
-                double z = holeEdgeRadius * Math.sin(angle);
-
-                Vector normal = targetInfo.normal;
-                Vector u, v;
-                if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-                    u = new Vector(1, 0, 0);
-                    v = new Vector(0, 0, 1);
-                } else {
-                    if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                        u = new Vector(0, 1, 0);
-                        v = new Vector(0, 0, 1);
-                    } else {
-                        u = new Vector(1, 0, 0);
-                        v = new Vector(0, 1, 0);
-                    }
-                }
-
-                Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
-                Vector depthOffset = normal.clone().multiply(-1.2);
-                Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
-                        0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 1.5f));
-            }
-        }
-    }
-
-    private void drawFlatCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
-        double circumference = 2 * Math.PI * radius;
-        int points = Math.max(8, (int) (circumference / density));
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = radius * Math.cos(angle);
-            double localY = radius * Math.sin(angle);
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Location point = targetInfo.location.clone().add(localPos);
-
-            Color ringColor = Color.fromRGB(50, 50, 50);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
-        }
-    }
-
-    private void drawFlatRadialLine(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density) {
-        int points = (int) ((maxLength - minLength) / density);
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 1; i <= points; i++) {
-            double distance = minLength + ((maxLength - minLength) * i) / points;
-            double localX = distance * Math.cos(angle);
-            double localY = distance * Math.sin(angle);
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Location point = targetInfo.location.clone().add(localPos);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(40, 40, 40), 0.5f));
-        }
-    }
-
-    private void drawFlatCrossLines(TargetInfo targetInfo, double maxLength, double minLength, double density) {
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        Vector[] directions = {u, u.clone().multiply(-1), v, v.clone().multiply(-1)};
-
-        for (Vector direction : directions) {
-            int points = (int) ((maxLength - minLength) / density);
-            for (int i = 1; i <= points; i++) {
-                double distance = minLength + ((maxLength - minLength) * i) / points;
-
-                Vector pos = direction.clone().multiply(distance);
-                Location point = targetInfo.location.clone().add(pos);
-
-                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                        0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(40, 40, 40), 0.5f));
-            }
-        }
-    }
-
-    private void drawTransitionCircleOnPlane(TargetInfo targetInfo, double radius, double density, double depthProgress) {
+    private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
         double circumference = 2 * Math.PI * radius;
         int points = Math.max(8, (int) (circumference / density));
 
@@ -594,138 +467,12 @@ public class ScrollOfGravitation implements Listener {
             double maxDistanceFromHole = 6.0 - holeRadius;
 
             double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-            double depth = depthRatio * depthRatio * 1.8 * depthProgress;
+            double depth = depthRatio * depthRatio * 1.8;
 
             Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
             Vector depthOffset = normal.clone().multiply(-depth);
             Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
 
-            int colorValue = (int)(10 + radius * 3 + (40 * (1 - depthProgress)));
-            Color ringColor = Color.fromRGB(colorValue, colorValue, colorValue);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
-        }
-    }
-
-    private void drawTransitionRadialLine(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density, double depthProgress) {
-        int points = (int) ((maxLength - minLength) / density);
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 1; i <= points; i++) {
-            double distance = minLength + ((maxLength - minLength) * i) / points;
-            double localX = distance * Math.cos(angle);
-            double localY = distance * Math.sin(angle);
-
-            double distanceFromHole = Math.abs(distance - minLength);
-            double maxDistanceFromHole = maxLength - minLength;
-            double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-            double depth = depthRatio * depthRatio * 1.4 * depthProgress;
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            int colorValue = (int)(15 + (25 * (1 - depthProgress)));
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(colorValue, colorValue, colorValue), 0.5f));
-        }
-    }
-
-    private void drawTransitionCrossLines(TargetInfo targetInfo, double maxLength, double minLength, double density, double depthProgress) {
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        Vector[] directions = {u, u.clone().multiply(-1), v, v.clone().multiply(-1)};
-
-        for (Vector direction : directions) {
-            int points = (int) ((maxLength - minLength) / density);
-            for (int i = 1; i <= points; i++) {
-                double distance = minLength + ((maxLength - minLength) * i) / points;
-
-                double distanceFromHole = Math.abs(distance - minLength);
-                double maxDistanceFromHole = maxLength - minLength;
-                double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-                double depth = depthRatio * depthRatio * depthRatio * 1.2 * depthProgress;
-
-                Vector pos = direction.clone().multiply(distance);
-                Vector depthOffset = normal.clone().multiply(-depth);
-                Location point = targetInfo.location.clone().add(pos).add(depthOffset);
-
-                int colorValue = (int)(20 + (20 * (1 - depthProgress)));
-                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                        0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(colorValue, colorValue, colorValue), 0.5f));
-            }
-        }
-    }
-
-
-    private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
-        double circumference = 2 * Math.PI * radius;
-        int points = Math.max(8, (int) (circumference / density));
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        // Xác định hệ tọa độ địa phương
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = radius * Math.cos(angle);
-            double localY = radius * Math.sin(angle);
-
-            // Tạo hiệu ứng lõm sâu hơn - càng gần viền lỗ càng sâu
-            double holeRadius = 0.8;
-            double distanceFromHole = Math.abs(radius - holeRadius);
-            double maxDistanceFromHole = 6.0 - holeRadius; // maxRadius - holeRadius
-
-            double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
-            double depth = depthRatio * depthRatio * 1.8; // Tăng độ sâu
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            // Sử dụng particle nhỏ hơn với màu đậm hơn
             Color ringColor = Color.fromRGB(
                     (int)(10 + radius * 3),
                     (int)(10 + radius * 3),
@@ -733,49 +480,11 @@ public class ScrollOfGravitation implements Listener {
             );
 
             targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f)); // Giảm size từ 1.0f xuống 0.6f
+                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
         }
     }
 
-
-    private void drawCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
-        double circumference = 2 * Math.PI * radius;
-        int points = Math.max(6, (int) (circumference / density));
-
-        Vector normal = targetInfo.normal;
-        Vector u, v;
-
-        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-            u = new Vector(1, 0, 0);
-            v = new Vector(0, 0, 1);
-        } else {
-            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                u = new Vector(0, 1, 0);
-                v = new Vector(0, 0, 1);
-            } else {
-                u = new Vector(1, 0, 0);
-                v = new Vector(0, 1, 0);
-            }
-        }
-
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = radius * Math.cos(angle);
-            double localY = radius * Math.sin(angle);
-
-            double depthRatio = 1.0 - (radius / 4.0);
-            double depth = depthRatio * 0.8;
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(20, 20, 20), 1.0f));
-        }
-    }
-
-    private void drawRadialLineWithDepth(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density) {
+    private void drawRadialLineWithDepth(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density, double scale) {
         int points = (int) ((maxLength - minLength) / density);
 
         Vector normal = targetInfo.normal;
@@ -795,10 +504,10 @@ public class ScrollOfGravitation implements Listener {
 
         for (int i = 1; i <= points; i++) {
             double distance = minLength + ((maxLength - minLength) * i) / points;
-            double localX = distance * Math.cos(angle);
-            double localY = distance * Math.sin(angle);
+            double localX = (distance * Math.cos(angle)) * scale;
+            double localY = (distance * Math.sin(angle)) * scale;
 
-            // Tạo độ sâu tăng dần về phía viền lỗ
+
             double distanceFromHole = Math.abs(distance - minLength);
             double maxDistanceFromHole = maxLength - minLength;
             double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
@@ -814,11 +523,10 @@ public class ScrollOfGravitation implements Listener {
     }
 
 
-    private void createBlackHoleEdge(TargetInfo targetInfo, int ticks) {
+    private void createBlackHoleEdge(TargetInfo targetInfo, int ticks, double scale) {
         Vector normal = targetInfo.normal;
-        double holeRadius = 0.8;
+        double holeRadius = 0.8 * scale;
 
-        // Tạo hiệu ứng viền lỗ với particle xoay
         for (int i = 0; i < 12; i++) {
             double angle = i * Math.PI / 6 + ticks * 0.08;
             double x = holeRadius * Math.cos(angle);
@@ -839,14 +547,12 @@ public class ScrollOfGravitation implements Listener {
             }
 
             Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
-            Vector depthOffset = normal.clone().multiply(-1.5); // Sâu nhất ở viền lỗ
+            Vector depthOffset = normal.clone().multiply(-1.5);
             Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
 
-            // Particle tối ở viền lỗ
             targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
                     0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(3, 3, 3), 0.7f));
 
-            // Thêm hiệu ứng xoáy nhỏ
             if (ticks % 6 == 0) {
                 double innerAngle = angle + Math.PI / 12;
                 double innerRadius = holeRadius * 0.7;
@@ -863,7 +569,7 @@ public class ScrollOfGravitation implements Listener {
         }
     }
 
-    private void drawCrossLinesWithDepth(TargetInfo targetInfo, double maxLength, double minLength, double density) {
+    private void drawCrossLinesWithDepth(TargetInfo targetInfo, double maxLength, double minLength, double density, double scale) {
         Vector normal = targetInfo.normal;
         Vector u, v;
 
@@ -887,13 +593,13 @@ public class ScrollOfGravitation implements Listener {
             for (int i = 1; i <= points; i++) {
                 double distance = minLength + ((maxLength - minLength) * i) / points;
 
-                // Độ sâu tăng theo hàm bậc 3 gần viền lỗ
                 double distanceFromHole = Math.abs(distance - minLength);
                 double maxDistanceFromHole = maxLength - minLength;
                 double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
                 double depth = depthRatio * depthRatio * depthRatio * 1.2;
 
-                Vector pos = direction.clone().multiply(distance);
+                Vector pos = direction.clone().multiply(distance * scale);
+
                 Vector depthOffset = normal.clone().multiply(-depth);
                 Location point = targetInfo.location.clone().add(pos).add(depthOffset);
 
@@ -903,64 +609,60 @@ public class ScrollOfGravitation implements Listener {
         }
     }
 
-    private void executePullEnemies(Player player, ItemStack item, Location targetLocation) {
-        double pullRange = scrollConfig != null ? scrollConfig.getDouble("pull-range", 8.0) : 8.0;
+    private void executePullSelf(Player player, ItemStack item, Location targetLocation) {
+        World world = targetLocation.getWorld();
+        if (world != null) world.getChunkAt(targetLocation).load();
 
-        List<LivingEntity> enemies = new ArrayList<>();
-        for (Entity entity : targetLocation.getWorld().getNearbyEntities(targetLocation, pullRange, pullRange, pullRange)) {
-            if (entity instanceof Monster || (entity instanceof LivingEntity && entity != player && !(entity instanceof Player))) {
-                enemies.add((LivingEntity) entity);
-            }
-        }
+        Location from = player.getLocation();
+        spawnParticles(player, from, "pull-self-particles");
+        playSound(player, "pull-self-sound");
 
-        if (enemies.isEmpty()) {
-            Map<String, String> placeholders = new HashMap<>();
-            placeholders.put("pull-range", String.valueOf((int) pullRange));
-            sendMessage(player, "no-enemies", placeholders);
-            return;
-        }
-
-        for (LivingEntity enemy : enemies) {
-            startContinuousPull(enemy, targetLocation, 40);
-            spawnParticles(player, enemy.getLocation(), "pull-enemies-particles");
-        }
-
-        startGravityVortex(targetLocation, 80);
-        playSound(player, "pull-enemies-sound");
-
-        Map<String, String> placeholders = locPlaceholders(targetLocation);
-        placeholders.put("enemy-count", String.valueOf(enemies.size()));
-        sendMessage(player, "pulled-enemies", placeholders);
+        startContinuousPlayerPull(player, targetLocation, from);
 
         consumeScroll(player, item);
-        playSound(player, "success-sound");
     }
 
-    private void startContinuousPull(LivingEntity entity, Location target, int duration) {
+    private void startContinuousPlayerPull(Player player, Location target, Location startLocation) {
         new BukkitRunnable() {
             int ticks = 0;
+            final int maxTicks = 60;
 
             @Override
             public void run() {
-                if (!entity.isValid() || entity.isDead() || ticks >= duration) {
+                if (!player.isOnline() || ticks >= maxTicks) {
+                    if (player.isOnline()) {
+                        player.teleport(target);
+                        spawnParticles(player, target, "target-particles");
+                        Map<String, String> placeholders = locPlaceholders(target);
+                        sendMessage(player, "pulled-self", placeholders);
+                        playSound(player, "success-sound");
+                    }
                     cancel();
                     return;
                 }
 
-                Location entityLoc = entity.getLocation();
-                double distance = entityLoc.distance(target);
+                Location currentLoc = player.getLocation();
+                double distance = currentLoc.distance(target);
 
-                if (distance < 1.5) {
-                    entity.teleport(target);
+                if (distance < 2.0) {
+                    player.teleport(target);
+                    startGravityVortex(target, 40);
+                    Map<String, String> placeholders = locPlaceholders(target);
+                    sendMessage(player, "pulled-self", placeholders);
+                    playSound(player, "success-sound");
                     cancel();
                     return;
                 }
 
-                Vector direction = target.toVector().subtract(entityLoc.toVector());
-                direction.setY(direction.getY() + 0.2);
+                Vector direction = target.toVector().subtract(currentLoc.toVector());
+                direction.setY(direction.getY() + 0.1);
 
-                double pullStrength = Math.min(distance * 0.3, 2.5);
-                entity.setVelocity(direction.normalize().multiply(pullStrength));
+                double pullStrength = Math.min(distance * 0.4, 3.5);
+                player.setVelocity(direction.normalize().multiply(pullStrength));
+
+                if (ticks % 2 == 0) {
+                    spawnParticles(player, currentLoc, "pull-self-particles");
+                }
 
                 ticks++;
             }
@@ -1031,64 +733,20 @@ public class ScrollOfGravitation implements Listener {
         }.runTaskTimer(plugin, 0L, 2L);
     }
 
-    private void executePullSelf(Player player, ItemStack item, Location targetLocation) {
-        World world = targetLocation.getWorld();
-        if (world != null) world.getChunkAt(targetLocation).load();
-
-        Location from = player.getLocation();
-        spawnParticles(player, from, "pull-self-particles");
-        playSound(player, "pull-self-sound");
-
-        startContinuousPlayerPull(player, targetLocation, from);
-
-        consumeScroll(player, item);
-    }
-
-    private void startContinuousPlayerPull(Player player, Location target, Location startLocation) {
-        new BukkitRunnable() {
-            int ticks = 0;
-            final int maxTicks = 60;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || ticks >= maxTicks) {
-                    if (player.isOnline()) {
-                        player.teleport(target);
-                        spawnParticles(player, target, "target-particles");
-                        Map<String, String> placeholders = locPlaceholders(target);
-                        sendMessage(player, "pulled-self", placeholders);
-                        playSound(player, "success-sound");
-                    }
-                    cancel();
-                    return;
-                }
-
-                Location currentLoc = player.getLocation();
-                double distance = currentLoc.distance(target);
-
-                if (distance < 2.0) {
-                    player.teleport(target);
-                    startGravityVortex(target, 40);
-                    Map<String, String> placeholders = locPlaceholders(target);
-                    sendMessage(player, "pulled-self", placeholders);
-                    playSound(player, "success-sound");
-                    cancel();
-                    return;
-                }
-
-                Vector direction = target.toVector().subtract(currentLoc.toVector());
-                direction.setY(direction.getY() + 0.1);
-
-                double pullStrength = Math.min(distance * 0.4, 3.5);
-                player.setVelocity(direction.normalize().multiply(pullStrength));
-
-                if (ticks % 2 == 0) {
-                    spawnParticles(player, currentLoc, "pull-self-particles");
-                }
-
-                ticks++;
+    private void pullEntitiesTowards(Location target, double range, double strengthCap, Player source) {
+        World w = target.getWorld();
+        if (w == null) return;
+        for (Entity entity : w.getNearbyEntities(target, range, range, range)) {
+            if (entity instanceof LivingEntity && entity != source && !(entity instanceof Player)) {
+                LivingEntity e = (LivingEntity) entity;
+                Location el = e.getLocation();
+                Vector dir = target.toVector().subtract(el.toVector());
+                dir.setY(dir.getY() + 0.2);
+                double dist = Math.max(0.1, el.distance(target));
+                double strength = Math.min(dist * 0.18, strengthCap);
+                e.setVelocity(dir.normalize().multiply(strength));
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }
     }
 
     private void consumeScroll(Player player, ItemStack item) {
@@ -1100,19 +758,10 @@ public class ScrollOfGravitation implements Listener {
     }
 
     private void playSound(Player player, String soundKey) {
-        ConfigurationSection soundConfig = scrollConfig.getConfigurationSection("sounds." + soundKey);
-        if (soundConfig != null) {
-            String soundName = soundConfig.getString("sound", "BLOCK_NOTE_BLOCK_PLING");
-            float volume = (float) soundConfig.getDouble("volume", 1.0);
-            float pitch = (float) soundConfig.getDouble("pitch", 1.0);
-
-            try {
-                Sound sound = Sound.valueOf(soundName.toUpperCase());
-                player.playSound(player.getLocation(), sound, volume, pitch);
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Invalid sound: " + soundName);
-            }
-        }
+        SoundConfig sc = getSoundConfig(soundKey, "BLOCK_NOTE_BLOCK_PLING", 1.0f, 1.0f);
+        try {
+            player.playSound(player.getLocation(), sc.sound, sc.volume, sc.pitch);
+        } catch (IllegalArgumentException ignored) {}
     }
 
     private void spawnParticles(Player player, Location location, String particleKey) {
@@ -1162,5 +811,31 @@ public class ScrollOfGravitation implements Listener {
         ph.put("y", String.valueOf(l.getBlockY()));
         ph.put("z", String.valueOf(l.getBlockZ()));
         return ph;
+    }
+
+    private static class SoundConfig {
+        final Sound sound;
+        final float volume;
+        final float pitch;
+        SoundConfig(Sound sound, float volume, float pitch) { this.sound = sound; this.volume = volume; this.pitch = pitch; }
+    }
+
+    private SoundConfig getSoundConfig(String key, String def, float defVol, float defPitch) {
+        ConfigurationSection soundConfig = scrollConfig.getConfigurationSection("sounds." + key);
+        String soundName = def;
+        float volume = defVol;
+        float pitch = defPitch;
+        if (soundConfig != null) {
+            soundName = soundConfig.getString("sound", def);
+            volume = (float) soundConfig.getDouble("volume", defVol);
+            pitch = (float) soundConfig.getDouble("pitch", defPitch);
+        }
+        Sound s;
+        try {
+            s = Sound.valueOf(soundName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            s = Sound.BLOCK_NOTE_BLOCK_PLING;
+        }
+        return new SoundConfig(s, volume, pitch);
     }
 }
