@@ -1,0 +1,52 @@
+cast-time: 2.0
+material: PAPER
+pull-range: 15
+max-range: 500
+
+sounds:
+  cancel-sound:
+    sound: "BLOCK_BEACON_POWER_SELECT"
+    volume: 0.5
+    pitch: 0.1
+  pull-enemies-sound:
+    sound: "ENTITY_ENDER_DRAGON_GROWL"
+    volume: 0.8
+    pitch: 1.5
+  pull-self-sound:
+    sound: "ENTITY_ENDERMAN_TELEPORT"
+    volume: 1.0
+    pitch: 0.8
+  success-sound:
+    sound: "BLOCK_PORTAL_TRIGGER"
+    volume: 0.8
+    pitch: 1.2
+
+particles:
+  pull-enemies-particles:
+    particle: "SMOKE_NORMAL"
+    count: 5
+    offset-x: 0.3
+    offset-y: 0.3
+    offset-z: 0.3
+    speed: 0.1
+
+  pull-self-particles:
+    particle: "PORTAL"
+    count: 20
+    offset-x: 0.5
+    offset-y: 0.5
+    offset-z: 0.5
+    speed: 0.2
+
+messages:
+  prefix: "&7[<gradient:#3a3d3d:#96ffe7>Scroll Of Gravitation</gradient>&7]"
+  on-cooldown: "&cYou need to wait %remaining% seconds to use this Scroll!"
+  no-target: "&cNo valid target found! Please look at a block."
+  prepare-pull-enemies: "&ePreparing to pull enemies... Do not move!"
+  prepare-pull-self: "&ePreparing to pull yourself... Do not move!"
+  pull-cancelled: "&cPull cancelled because you moved."
+  pulled-enemies: "&aSuccessfully pulled %enemy-count% enemies to: &e%world% (%x%, %y%, %z%)"
+  pulled-self: "&aSuccessfully pulled yourself to: &e%world% (%x%, %y%, %z%)"
+  too-far: "&cTarget location is too far! Maximum distance: %max-range% blocks."
+  no-enemies: "&cNo enemies found within %pull-range% blocks!"
+  already-casting: "&cYou are already casting a scroll!"
