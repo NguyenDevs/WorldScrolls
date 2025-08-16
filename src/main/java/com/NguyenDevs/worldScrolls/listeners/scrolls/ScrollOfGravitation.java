@@ -340,7 +340,7 @@ public class ScrollOfGravitation implements Listener {
         return new BukkitRunnable() {
             int ticks = 0;
             final int maxTicks = (int) (duration * 20);
-            final double maxRadius = 6.0; // Tăng radius để có nhiều vòng hơn
+            final double maxRadius = 6.0;
 
             @Override
             public void run() {
@@ -349,59 +349,341 @@ public class ScrollOfGravitation implements Listener {
                     return;
                 }
 
-                double minRadius = 0.8;
-                for (int ring = 1; ring <= 12; ring++) {
-                    double normalizedRing = (double) ring / 12.0;
-                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+                double progress = (double) ticks / maxTicks;
 
-                    drawThinCircleOnPlane(targetInfo, radius, 0.08);
-                }
-
-                double minRadius2 = 0.8;
-                for (int i = 0; i < 16; i++) {
-                    double angle = i * Math.PI / 8.0;
-                    drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius2, 0.12);
-                }
-                createBlackHoleEdge(targetInfo, ticks);
-
-                drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius2, 0.15);
-
-                if (ticks % 10 == 0) {
-                    double pulseIntensity = 1.0 + Math.sin(ticks * 0.2) * 0.5;
-                    double holeEdgeRadius = 0.8;
-
-                    for (int i = 0; i < 8; i++) {
-                        double angle = i * Math.PI / 4 + ticks * 0.05;
-                        double x = holeEdgeRadius * Math.cos(angle);
-                        double z = holeEdgeRadius * Math.sin(angle);
-
-                        Vector normal = targetInfo.normal;
-                        Vector u, v;
-                        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
-                            u = new Vector(1, 0, 0);
-                            v = new Vector(0, 0, 1);
-                        } else {
-                            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
-                                u = new Vector(0, 1, 0);
-                                v = new Vector(0, 0, 1);
-                            } else {
-                                u = new Vector(1, 0, 0);
-                                v = new Vector(0, 1, 0);
-                            }
-                        }
-
-                        Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
-                        Vector depthOffset = normal.clone().multiply(-1.2); // Depth ở viền lỗ
-                        Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-                        targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
-                                0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 1.5f));
-                    }
+                if (progress <= 0.5) {
+                    drawExpandingGrid(targetInfo, progress);
+                } else if (progress <= 0.75) {
+                    drawExpandingGridWithDepth(targetInfo, progress);
+                } else {
+                    drawFullEffectWithBlackHole(targetInfo, progress);
                 }
 
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 3L); // Giảm tần suất update để mượt hơn
+        }.runTaskTimer(plugin, 0L, 3L);
+    }
+
+    private void drawExpandingGrid(TargetInfo targetInfo, double progress) {
+        double currentMaxRadius = 6.0 * progress * 2.0;
+        if (currentMaxRadius < 0.8) currentMaxRadius = 0.8;
+
+        double minRadius = 0.8;
+        int maxRings = (int) (12 * progress * 2.0);
+        if (maxRings < 1) maxRings = 1;
+
+        for (int ring = 1; ring <= maxRings; ring++) {
+            double normalizedRing = (double) ring / 12.0;
+            double radius = minRadius + (currentMaxRadius - minRadius) * normalizedRing;
+
+            drawFlatCircleOnPlane(targetInfo, radius, 0.08);
+        }
+
+        int maxLines = (int) (16 * progress * 2.0);
+        if (maxLines < 4) maxLines = 4;
+
+        for (int i = 0; i < maxLines; i++) {
+            double angle = i * Math.PI / 8.0;
+            drawFlatRadialLine(targetInfo, angle, currentMaxRadius, minRadius, 0.12);
+        }
+
+        drawFlatCrossLines(targetInfo, currentMaxRadius, minRadius, 0.15);
+    }
+
+    private void drawExpandingGridWithDepth(TargetInfo targetInfo, double progress) {
+        double depthProgress = (progress - 0.5) / 0.25;
+        double maxRadius = 6.0;
+        double minRadius = 0.8;
+
+        for (int ring = 1; ring <= 12; ring++) {
+            double normalizedRing = (double) ring / 12.0;
+            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+
+            drawTransitionCircleOnPlane(targetInfo, radius, 0.08, depthProgress);
+        }
+
+        for (int i = 0; i < 16; i++) {
+            double angle = i * Math.PI / 8.0;
+            drawTransitionRadialLine(targetInfo, angle, maxRadius, minRadius, 0.12, depthProgress);
+        }
+
+        drawTransitionCrossLines(targetInfo, maxRadius, minRadius, 0.15, depthProgress);
+    }
+
+    private void drawFullEffectWithBlackHole(TargetInfo targetInfo, double progress) {
+        double maxRadius = 6.0;
+        double minRadius = 0.8;
+
+        for (int ring = 1; ring <= 12; ring++) {
+            double normalizedRing = (double) ring / 12.0;
+            double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+
+            drawThinCircleOnPlane(targetInfo, radius, 0.08);
+        }
+
+        for (int i = 0; i < 16; i++) {
+            double angle = i * Math.PI / 8.0;
+            drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius, 0.12);
+        }
+
+        int currentTick = (int) (progress * (10.0 * 20));
+        createBlackHoleEdge(targetInfo, currentTick);
+
+        drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius, 0.15);
+
+        if (currentTick % 10 == 0) {
+            double pulseIntensity = 1.0 + Math.sin(currentTick * 0.2) * 0.5;
+            double holeEdgeRadius = 0.8;
+
+            for (int i = 0; i < 8; i++) {
+                double angle = i * Math.PI / 4 + currentTick * 0.05;
+                double x = holeEdgeRadius * Math.cos(angle);
+                double z = holeEdgeRadius * Math.sin(angle);
+
+                Vector normal = targetInfo.normal;
+                Vector u, v;
+                if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+                    u = new Vector(1, 0, 0);
+                    v = new Vector(0, 0, 1);
+                } else {
+                    if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                        u = new Vector(0, 1, 0);
+                        v = new Vector(0, 0, 1);
+                    } else {
+                        u = new Vector(1, 0, 0);
+                        v = new Vector(0, 1, 0);
+                    }
+                }
+
+                Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
+                Vector depthOffset = normal.clone().multiply(-1.2);
+                Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
+                        0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 1.5f));
+            }
+        }
+    }
+
+    private void drawFlatCircleOnPlane(TargetInfo targetInfo, double radius, double density) {
+        double circumference = 2 * Math.PI * radius;
+        int points = Math.max(8, (int) (circumference / density));
+
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        for (int i = 0; i < points; i++) {
+            double angle = (2 * Math.PI * i) / points;
+            double localX = radius * Math.cos(angle);
+            double localY = radius * Math.sin(angle);
+
+            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+            Location point = targetInfo.location.clone().add(localPos);
+
+            Color ringColor = Color.fromRGB(50, 50, 50);
+
+            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
+        }
+    }
+
+    private void drawFlatRadialLine(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density) {
+        int points = (int) ((maxLength - minLength) / density);
+
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        for (int i = 1; i <= points; i++) {
+            double distance = minLength + ((maxLength - minLength) * i) / points;
+            double localX = distance * Math.cos(angle);
+            double localY = distance * Math.sin(angle);
+
+            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+            Location point = targetInfo.location.clone().add(localPos);
+
+            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(40, 40, 40), 0.5f));
+        }
+    }
+
+    private void drawFlatCrossLines(TargetInfo targetInfo, double maxLength, double minLength, double density) {
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        Vector[] directions = {u, u.clone().multiply(-1), v, v.clone().multiply(-1)};
+
+        for (Vector direction : directions) {
+            int points = (int) ((maxLength - minLength) / density);
+            for (int i = 1; i <= points; i++) {
+                double distance = minLength + ((maxLength - minLength) * i) / points;
+
+                Vector pos = direction.clone().multiply(distance);
+                Location point = targetInfo.location.clone().add(pos);
+
+                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                        0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(40, 40, 40), 0.5f));
+            }
+        }
+    }
+
+    private void drawTransitionCircleOnPlane(TargetInfo targetInfo, double radius, double density, double depthProgress) {
+        double circumference = 2 * Math.PI * radius;
+        int points = Math.max(8, (int) (circumference / density));
+
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        for (int i = 0; i < points; i++) {
+            double angle = (2 * Math.PI * i) / points;
+            double localX = radius * Math.cos(angle);
+            double localY = radius * Math.sin(angle);
+
+            double holeRadius = 0.8;
+            double distanceFromHole = Math.abs(radius - holeRadius);
+            double maxDistanceFromHole = 6.0 - holeRadius;
+
+            double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
+            double depth = depthRatio * depthRatio * 1.8 * depthProgress;
+
+            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+            Vector depthOffset = normal.clone().multiply(-depth);
+            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+            int colorValue = (int)(10 + radius * 3 + (40 * (1 - depthProgress)));
+            Color ringColor = Color.fromRGB(colorValue, colorValue, colorValue);
+
+            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.6f));
+        }
+    }
+
+    private void drawTransitionRadialLine(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density, double depthProgress) {
+        int points = (int) ((maxLength - minLength) / density);
+
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        for (int i = 1; i <= points; i++) {
+            double distance = minLength + ((maxLength - minLength) * i) / points;
+            double localX = distance * Math.cos(angle);
+            double localY = distance * Math.sin(angle);
+
+            double distanceFromHole = Math.abs(distance - minLength);
+            double maxDistanceFromHole = maxLength - minLength;
+            double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
+            double depth = depthRatio * depthRatio * 1.4 * depthProgress;
+
+            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+            Vector depthOffset = normal.clone().multiply(-depth);
+            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+            int colorValue = (int)(15 + (25 * (1 - depthProgress)));
+            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                    0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(colorValue, colorValue, colorValue), 0.5f));
+        }
+    }
+
+    private void drawTransitionCrossLines(TargetInfo targetInfo, double maxLength, double minLength, double density, double depthProgress) {
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        Vector[] directions = {u, u.clone().multiply(-1), v, v.clone().multiply(-1)};
+
+        for (Vector direction : directions) {
+            int points = (int) ((maxLength - minLength) / density);
+            for (int i = 1; i <= points; i++) {
+                double distance = minLength + ((maxLength - minLength) * i) / points;
+
+                double distanceFromHole = Math.abs(distance - minLength);
+                double maxDistanceFromHole = maxLength - minLength;
+                double depthRatio = 1.0 - (distanceFromHole / maxDistanceFromHole);
+                double depth = depthRatio * depthRatio * depthRatio * 1.2 * depthProgress;
+
+                Vector pos = direction.clone().multiply(distance);
+                Vector depthOffset = normal.clone().multiply(-depth);
+                Location point = targetInfo.location.clone().add(pos).add(depthOffset);
+
+                int colorValue = (int)(20 + (20 * (1 - depthProgress)));
+                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                        0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(colorValue, colorValue, colorValue), 0.5f));
+            }
+        }
     }
 
 
