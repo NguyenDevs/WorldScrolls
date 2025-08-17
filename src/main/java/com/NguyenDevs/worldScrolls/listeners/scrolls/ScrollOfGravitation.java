@@ -486,28 +486,40 @@ public class ScrollOfGravitation implements Listener {
             }
 
              */
-
             private void drawGrid(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
                 int ringCount = isRightClick ? 8 : 12;
 
-                double shrinkSpeed = 0.05;
-                double ringSpacing = (maxRadius - minRadius) / ringCount;
+                if (isRightClick) {
+                    baseMaxRadius = 2.0;
+                    baseMinRadius = 0.8;
+                    baseHoleRadius = 0.2 * baseMaxRadius;
+                    double prog = (double) ticks / (maxTicks);
+                    if (ticks < 20) {
+                        prog = 0.0;
+                    } else {
+                        prog = (ticks - 20.0) / (maxTicks - 20.0);
+                    }
 
-                for (int ring = 0; ring < ringCount; ring++) {
-                    double ringAge = (ticks * shrinkSpeed) - (ring * 0.3);
-
-                    if (ringAge < 0) continue;
-
-                    double currentRadius = maxRadius - (ringAge * ringSpacing);
-
-                    if (currentRadius < minRadius) continue;
-
-                    drawThinCircleOnPlane(targetInfo, currentRadius, 0.08, depthMult, holeRadius, maxRadius);
-                }
-
-                double newRingInterval = ringSpacing / shrinkSpeed;
-                if (ticks % Math.max(1, (int)newRingInterval) == 0) {
-                    drawThinCircleOnPlane(targetInfo, maxRadius, 0.08, depthMult, holeRadius, maxRadius);
+                    if (prog >= 1.0) {
+                        drawShrinkingRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius);
+                    } else {
+                        drawStaticRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius, ringCount);
+                    }
+                } else {
+                    if (ticks < 20) {
+                        createPointCluster(targetInfo);
+                    } else if (ticks < 40) {
+                        double prog = Math.pow((ticks - 20.0) / 20.0, 0.5);
+                        double currentMaxRadius = baseMaxRadius * prog;
+                        double currentMinRadius = baseMinRadius * prog;
+                        double currentHoleRadius = 0.2 * currentMaxRadius;
+                        drawStaticRings(targetInfo, currentMinRadius, currentMaxRadius, 0.0, ticks, currentHoleRadius, ringCount);
+                    } else if (ticks < 60) {
+                        double prog = (ticks - 40.0) / 20.0;
+                        drawStaticRings(targetInfo, minRadius, maxRadius, prog, ticks, holeRadius, ringCount);
+                    } else {
+                        drawShrinkingRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius);
+                    }
                 }
 
                 for (int i = 0; i < 16; i++) {
@@ -546,6 +558,38 @@ public class ScrollOfGravitation implements Listener {
                         targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
                                 0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 0.8f));
                     }
+                }
+            }
+            private void drawStaticRings(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius, int ringCount) {
+                for (int ring = 1; ring <= ringCount; ring++) {
+                    double normalizedRing = (double) ring / ringCount;
+                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+                    drawThinCircleOnPlane(targetInfo, radius, 0.08, depthMult, holeRadius, maxRadius);
+                }
+            }
+
+            private void drawShrinkingRings(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
+                double shrinkSpeed = 0.05;
+                int maxRings = 20;
+                double ringSpacing = (maxRadius - minRadius) / maxRings;
+                double ringDelay = 6.0;
+
+                for (int ring = 0; ring < maxRings; ring++) {
+                    double ringStartTime = ring * ringDelay;
+                    double ringAge = ticks - ringStartTime - 60;
+
+                    if (ringAge < 0) continue;
+
+                    double progress = ringAge * shrinkSpeed;
+                    double currentRadius = maxRadius - (progress * ringSpacing);
+
+                    if (currentRadius < minRadius) continue;
+
+                    drawThinCircleOnPlane(targetInfo, currentRadius, 0.08, depthMult, holeRadius, maxRadius);
+                }
+
+                if (ticks % 6 == 0) {
+                    drawThinCircleOnPlane(targetInfo, maxRadius, 0.08, depthMult, holeRadius, maxRadius);
                 }
             }
         }.runTaskTimer(plugin, 0L, 3L);
