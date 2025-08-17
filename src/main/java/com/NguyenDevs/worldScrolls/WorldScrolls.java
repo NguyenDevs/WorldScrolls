@@ -45,7 +45,7 @@ public final class WorldScrolls extends JavaPlugin {
     public void onEnable() {
 
         instance = this;
-        initializeWorldGuard();
+        //initializeWorldGuard();
 
         configManager = new ConfigManager(this);
         configManager.initializeConfigs();
@@ -56,7 +56,7 @@ public final class WorldScrolls extends JavaPlugin {
 
         registerCommands();
         
-        checkDependencies();
+        //checkDependencies();
         
         printLogo();
         Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "&7[&dWorld&5Scroll&7] &aWorldScrolls plugin enabled successfully!"));
