@@ -486,40 +486,13 @@ public class ScrollOfGravitation implements Listener {
             }
 
              */
+
             private void drawGrid(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
                 int ringCount = isRightClick ? 8 : 12;
-
-                if (isRightClick) {
-                    baseMaxRadius = 2.0;
-                    baseMinRadius = 0.8;
-                    baseHoleRadius = 0.2 * baseMaxRadius;
-                    double prog = (double) ticks / (maxTicks);
-                    if (ticks < 20) {
-                        prog = 0.0;
-                    } else {
-                        prog = (ticks - 20.0) / (maxTicks - 20.0);
-                    }
-
-                    if (prog >= 1.0) {
-                        drawShrinkingRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius);
-                    } else {
-                        drawStaticRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius, ringCount);
-                    }
-                } else {
-                    if (ticks < 20) {
-                        createPointCluster(targetInfo);
-                    } else if (ticks < 40) {
-                        double prog = Math.pow((ticks - 20.0) / 20.0, 0.5);
-                        double currentMaxRadius = baseMaxRadius * prog;
-                        double currentMinRadius = baseMinRadius * prog;
-                        double currentHoleRadius = 0.2 * currentMaxRadius;
-                        drawStaticRings(targetInfo, currentMinRadius, currentMaxRadius, 0.0, ticks, currentHoleRadius, ringCount);
-                    } else if (ticks < 60) {
-                        double prog = (ticks - 40.0) / 20.0;
-                        drawStaticRings(targetInfo, minRadius, maxRadius, prog, ticks, holeRadius, ringCount);
-                    } else {
-                        drawShrinkingRings(targetInfo, minRadius, maxRadius, depthMult, ticks, holeRadius);
-                    }
+                for (int ring = 1; ring <= ringCount; ring++) {
+                    double normalizedRing = (double) ring / ringCount;
+                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
+                    drawThinCircleOnPlane(targetInfo, radius, 0.08, depthMult, holeRadius, maxRadius, ticks);
                 }
 
                 for (int i = 0; i < 16; i++) {
@@ -527,10 +500,12 @@ public class ScrollOfGravitation implements Listener {
                     drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius, 0.12, depthMult, holeRadius, maxRadius);
                 }
                 createBlackHoleEdge(targetInfo, ticks, minRadius / 0.8);
+
                 drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius, 0.15, depthMult, holeRadius, maxRadius);
 
                 if (ticks % 10 == 0) {
                     double holeEdgeRadius = minRadius;
+
                     for (int i = 0; i < 8; i++) {
                         double angle = i * Math.PI / 4 + ticks * 0.05;
                         double x = holeEdgeRadius * Math.cos(angle);
@@ -560,38 +535,8 @@ public class ScrollOfGravitation implements Listener {
                     }
                 }
             }
-            private void drawStaticRings(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius, int ringCount) {
-                for (int ring = 1; ring <= ringCount; ring++) {
-                    double normalizedRing = (double) ring / ringCount;
-                    double radius = minRadius + (maxRadius - minRadius) * (normalizedRing * normalizedRing * 0.7 + normalizedRing * 0.3);
-                    drawThinCircleOnPlane(targetInfo, radius, 0.08, depthMult, holeRadius, maxRadius);
-                }
-            }
 
-            private void drawShrinkingRings(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
-                double shrinkSpeed = 0.05;
-                int maxRings = 20;
-                double ringSpacing = (maxRadius - minRadius) / maxRings;
-                double ringDelay = 6.0;
 
-                for (int ring = 0; ring < maxRings; ring++) {
-                    double ringStartTime = ring * ringDelay;
-                    double ringAge = ticks - ringStartTime - 60;
-
-                    if (ringAge < 0) continue;
-
-                    double progress = ringAge * shrinkSpeed;
-                    double currentRadius = maxRadius - (progress * ringSpacing);
-
-                    if (currentRadius < minRadius) continue;
-
-                    drawThinCircleOnPlane(targetInfo, currentRadius, 0.08, depthMult, holeRadius, maxRadius);
-                }
-
-                if (ticks % 6 == 0) {
-                    drawThinCircleOnPlane(targetInfo, maxRadius, 0.08, depthMult, holeRadius, maxRadius);
-                }
-            }
         }.runTaskTimer(plugin, 0L, 3L);
     }
 
@@ -607,6 +552,7 @@ public class ScrollOfGravitation implements Listener {
         }
     }
 
+    /*
     private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density, double depthMult, double holeRadius, double maxRadius) {
         double circumference = 2 * Math.PI * radius;
         int points = Math.max(8, (int) (circumference / density));
@@ -648,6 +594,63 @@ public class ScrollOfGravitation implements Listener {
                     0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.3f));
         }
     }
+
+     */
+
+    private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density, double depthMult, double holeRadius, double maxRadius, int ticks) {
+        double circumference = 2 * Math.PI * radius;
+        int points = Math.max(8, (int) (circumference / density));
+
+        Vector normal = targetInfo.normal;
+        Vector u, v;
+
+        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+            u = new Vector(1, 0, 0);
+            v = new Vector(0, 0, 1);
+        } else {
+            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                u = new Vector(0, 1, 0);
+                v = new Vector(0, 0, 1);
+            } else {
+                u = new Vector(1, 0, 0);
+                v = new Vector(0, 1, 0);
+            }
+        }
+
+        double currentRadius = radius;
+
+        boolean isRightClick = maxRadius < 5.0;
+        int shrinkStartTick = isRightClick ? 40 : 120;
+
+        if (ticks > shrinkStartTick) {
+            double shrinkProgress = (double)(ticks - shrinkStartTick) / 60.0;
+            shrinkProgress = Math.min(shrinkProgress, 1.0);
+            currentRadius = radius * (1.0 - shrinkProgress * 0.95);
+            currentRadius = Math.max(currentRadius, 0.1);
+        }
+
+        for (int i = 0; i < points; i++) {
+            double angle = (2 * Math.PI * i) / points;
+            double localX = currentRadius * Math.cos(angle);
+            double localY = currentRadius * Math.sin(angle);
+
+            double depth = (holeRadius / Math.max(currentRadius, 0.1)) * 6.0 * depthMult;
+
+            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+            Vector depthOffset = normal.clone().multiply(-depth);
+            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+            Color ringColor = Color.fromRGB(
+                    (int)(10 + currentRadius * 3),
+                    (int)(10 + currentRadius * 3),
+                    (int)(10 + currentRadius * 3)
+            );
+
+            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.3f));
+        }
+    }
+
 
     private void drawRadialLineWithDepth(TargetInfo targetInfo, double angle, double maxLength, double minLength, double density, double depthMult, double holeRadius, double maxRadius) {
         int points = (int) ((maxLength - minLength) / density);
