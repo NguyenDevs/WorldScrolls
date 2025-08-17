@@ -119,7 +119,7 @@ public class ScrollOfGravitation implements Listener {
                 }
 
                 Location dynamicTarget = targetInfo.location.clone();
-                Vector depthOffset = targetInfo.normal.clone().multiply(-14.0 * depthMult);
+                Vector depthOffset = targetInfo.normal.clone().multiply(-10.0 * depthMult);
                 dynamicTarget.add(depthOffset);
 
                 if (ticks >= 150) {
@@ -576,7 +576,7 @@ public class ScrollOfGravitation implements Listener {
 
     private void createBlackHoleEdge(TargetInfo targetInfo, int ticks, double scale) {
         Vector normal = targetInfo.normal;
-        double holeRadius = 0.8 * scale;
+        double holeRadius = 0.2 * scale;
 
         for (int i = 0; i < 12; i++) {
             double angle = i * Math.PI / 6 + ticks * 0.08;
@@ -789,7 +789,7 @@ public class ScrollOfGravitation implements Listener {
         double pullStrength = (ticks < totalTicks - 1) ? strengthCap * 0.3 * (1 + progress * 2) : strengthCap * 3.0;
 
         Vector n = targetInfo.normal.clone().normalize();
-        double depth = 14.0 * depthMult;
+        double depth = 10.0 * depthMult;
         Location surface = targetInfo.location.clone();
         Location pullCenter = surface.clone().add(n.clone().multiply((range - depth) * 0.5));
         double effectiveRadius = 0.5 * (range + depth);
