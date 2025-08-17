@@ -435,6 +435,7 @@ public class ScrollOfGravitation implements Listener {
                 ticks++;
             }
 
+            /*
             private void drawGrid(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
                 int ringCount = isRightClick ? 8 : 12;
                 for (int ring = 1; ring <= ringCount; ring++) {
@@ -454,6 +455,70 @@ public class ScrollOfGravitation implements Listener {
                 if (ticks % 10 == 0) {
                     double holeEdgeRadius = minRadius;
 
+                    for (int i = 0; i < 8; i++) {
+                        double angle = i * Math.PI / 4 + ticks * 0.05;
+                        double x = holeEdgeRadius * Math.cos(angle);
+                        double z = holeEdgeRadius * Math.sin(angle);
+
+                        Vector normal = targetInfo.normal;
+                        Vector u, v;
+                        if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
+                            u = new Vector(1, 0, 0);
+                            v = new Vector(0, 0, 1);
+                        } else {
+                            if (targetInfo.face == BlockFace.EAST || targetInfo.face == BlockFace.WEST) {
+                                u = new Vector(0, 1, 0);
+                                v = new Vector(0, 0, 1);
+                            } else {
+                                u = new Vector(1, 0, 0);
+                                v = new Vector(0, 1, 0);
+                            }
+                        }
+
+                        Vector localPos = u.clone().multiply(x).add(v.clone().multiply(z));
+                        Vector depthOffset = normal.clone().multiply(-1.2 * depthMult);
+                        Location edgePoint = targetInfo.location.clone().add(localPos).add(depthOffset);
+
+                        targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, edgePoint, 1,
+                                0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(0, 255, 255), 0.8f));
+                    }
+                }
+            }
+
+             */
+
+            private void drawGrid(TargetInfo targetInfo, double minRadius, double maxRadius, double depthMult, int ticks, double holeRadius) {
+                int ringCount = isRightClick ? 8 : 12;
+
+                double shrinkSpeed = 0.05;
+                double ringSpacing = (maxRadius - minRadius) / ringCount;
+
+                for (int ring = 0; ring < ringCount; ring++) {
+                    double ringAge = (ticks * shrinkSpeed) - (ring * 0.3);
+
+                    if (ringAge < 0) continue;
+
+                    double currentRadius = maxRadius - (ringAge * ringSpacing);
+
+                    if (currentRadius < minRadius) continue;
+
+                    drawThinCircleOnPlane(targetInfo, currentRadius, 0.08, depthMult, holeRadius, maxRadius);
+                }
+
+                double newRingInterval = ringSpacing / shrinkSpeed;
+                if (ticks % Math.max(1, (int)newRingInterval) == 0) {
+                    drawThinCircleOnPlane(targetInfo, maxRadius, 0.08, depthMult, holeRadius, maxRadius);
+                }
+
+                for (int i = 0; i < 16; i++) {
+                    double angle = i * Math.PI / 8.0;
+                    drawRadialLineWithDepth(targetInfo, angle, maxRadius, minRadius, 0.12, depthMult, holeRadius, maxRadius);
+                }
+                createBlackHoleEdge(targetInfo, ticks, minRadius / 0.8);
+                drawCrossLinesWithDepth(targetInfo, maxRadius, minRadius, 0.15, depthMult, holeRadius, maxRadius);
+
+                if (ticks % 10 == 0) {
+                    double holeEdgeRadius = minRadius;
                     for (int i = 0; i < 8; i++) {
                         double angle = i * Math.PI / 4 + ticks * 0.05;
                         double x = holeEdgeRadius * Math.cos(angle);
