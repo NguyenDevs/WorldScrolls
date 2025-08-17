@@ -600,10 +600,8 @@ public class ScrollOfGravitation implements Listener {
     private void drawThinCircleOnPlane(TargetInfo targetInfo, double radius, double density, double depthMult, double holeRadius, double maxRadius, int ticks) {
         double circumference = 2 * Math.PI * radius;
         int points = Math.max(8, (int) (circumference / density));
-
         Vector normal = targetInfo.normal;
         Vector u, v;
-
         if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
             u = new Vector(1, 0, 0);
             v = new Vector(0, 0, 1);
@@ -616,38 +614,38 @@ public class ScrollOfGravitation implements Listener {
                 v = new Vector(0, 1, 0);
             }
         }
-
         double currentRadius = radius;
 
         boolean isRightClick = maxRadius < 5.0;
-        int shrinkStartTick = isRightClick ? 40 : 120;
+        int shrinkStartTick = isRightClick ? 40 : 60; // ← VỊ TRÍ CHỈNH THỜI GIAN BẮT ĐẦU THU NHỎ
 
         if (ticks > shrinkStartTick) {
-            double shrinkProgress = (double)(ticks - shrinkStartTick) / 60.0;
+            double shrinkProgress = (double)(ticks - shrinkStartTick) / 60.0; // CHỈNH TỐC
             shrinkProgress = Math.min(shrinkProgress, 1.0);
-            currentRadius = radius * (1.0 - shrinkProgress * 0.95);
-            currentRadius = Math.max(currentRadius, 0.1);
+            currentRadius = radius * (1.0 - shrinkProgress);
         }
 
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = currentRadius * Math.cos(angle);
-            double localY = currentRadius * Math.sin(angle);
+        // Tính depth hiện tại để kiểm tra
+        double currentDepth = (holeRadius / Math.max(currentRadius, 0.1)) * 6.0 * depthMult;
 
-            double depth = (holeRadius / Math.max(currentRadius, 0.1)) * 6.0 * depthMult;
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            Color ringColor = Color.fromRGB(
-                    (int)(10 + currentRadius * 3),
-                    (int)(10 + currentRadius * 3),
-                    (int)(10 + currentRadius * 3)
-            );
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.3f));
+        // Chỉ vẽ nếu chưa đạt depth 14
+        if (currentDepth < 14.0) {
+            for (int i = 0; i < points; i++) {
+                double angle = (2 * Math.PI * i) / points;
+                double localX = currentRadius * Math.cos(angle);
+                double localY = currentRadius * Math.sin(angle);
+                double depth = currentDepth;
+                Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+                Vector depthOffset = normal.clone().multiply(-depth);
+                Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
+                Color ringColor = Color.fromRGB(
+                        (int)(10 + currentRadius * 3),
+                        (int)(10 + currentRadius * 3),
+                        (int)(10 + currentRadius * 3)
+                );
+                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                        0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.3f));
+            }
         }
     }
 
