@@ -106,7 +106,15 @@ public class ScrollOfGravitation implements Listener {
                     cancel();
                     return;
                 }
-
+                if (player.getLocation().distance(castLocation) > 1.0) {
+                    sendMessage(player, "pull-cancelled");
+                    playSound(player, "cancel-sound");
+                    gravitationTask.cancel();
+                    targetGridTask.cancel();
+                    activeCasts.remove(player.getUniqueId());
+                    cancel();
+                    return;
+                }
                 double depthMult;
                 if (ticks < 20) {
                     depthMult = 0.0;
