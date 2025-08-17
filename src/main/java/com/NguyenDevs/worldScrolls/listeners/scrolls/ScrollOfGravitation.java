@@ -602,7 +602,6 @@ public class ScrollOfGravitation implements Listener {
         int points = Math.max(8, (int) (circumference / density));
         Vector normal = targetInfo.normal;
         Vector u, v;
-
         if (targetInfo.face == BlockFace.UP || targetInfo.face == BlockFace.DOWN) {
             u = new Vector(1, 0, 0);
             v = new Vector(0, 0, 1);
@@ -615,129 +614,37 @@ public class ScrollOfGravitation implements Listener {
                 v = new Vector(0, 1, 0);
             }
         }
+        double currentRadius = radius;
 
         boolean isRightClick = maxRadius < 5.0;
-        int shrinkStartTick = isRightClick ? 40 : 60;
+        int shrinkStartTick = isRightClick ? 40 : 60; // ← VỊ TRÍ CHỈNH THỜI GIAN BẮT ĐẦU THU NHỎ
 
-        // ===== VẼ VÒNG GỐC (nếu chưa bắt đầu thu nhỏ) =====
-        if (ticks <= shrinkStartTick) {
-            double currentDepth = (holeRadius / Math.max(radius, 0.1)) * 6.0 * depthMult;
-            if (currentDepth < 17.0) {
-                drawRingWithAlpha(targetInfo, radius, points, u, v, normal, depthMult, holeRadius, 1.0, ticks, 0);
-            }
-            return; // Thoát sớm nếu chưa thu nhỏ
+        if (ticks > shrinkStartTick) {
+            double shrinkProgress = (double)(ticks - shrinkStartTick) / 60.0; // CHỈNH TỐC
+            shrinkProgress = Math.min(shrinkProgress, 1.0);
+            currentRadius = radius * (1.0 - shrinkProgress);
         }
 
-        // ===== TÍNH TOÁN CHO GIAI ĐOẠN THU NHỎ + TẠO WAVE =====
-        double shrinkProgress = (double)(ticks - shrinkStartTick) / 60.0;
-        shrinkProgress = Math.min(shrinkProgress, 1.0);
+        // Tính depth hiện tại để kiểm tra
+        double currentDepth = (holeRadius / Math.max(currentRadius, 0.1)) * 6.0 * depthMult;
 
-        // Thu nhỏ vòng gốc
-        double currentRadius = radius * (1.0 - shrinkProgress);
-        double alpha = 1.0 - shrinkProgress;
-
-        // Vẽ vòng gốc nếu chưa biến mất
-        if (alpha > 0.05 && currentRadius > 0.1) {
-            double currentDepth = (holeRadius / Math.max(currentRadius, 0.1)) * 6.0 * depthMult;
-            if (currentDepth < 17.0) {
-                drawRingWithAlpha(targetInfo, currentRadius, points, u, v, normal, depthMult, holeRadius, alpha, ticks, 0);
-            }
-        }
-
-        // ===== TẠO WAVE LIÊN TỤC =====
-        int waveInterval = 12; // Tạo wave mới mỗi 12 tick
-        double waveLifetime = 200.0; // Mỗi wave sống 45 tick
-
-        // Tính số wave đã được tạo
-        int totalWavesCreated = (ticks - shrinkStartTick) / waveInterval;
-
-        // Vẽ tất cả wave đang hoạt động
-        for (int waveIndex = 0; waveIndex <= totalWavesCreated; waveIndex++) {
-            int waveStartTick = shrinkStartTick + (waveIndex * waveInterval);
-            int waveAge = ticks - waveStartTick;
-
-            // Chỉ vẽ wave nếu nó vẫn còn "sống"
-            if (waveAge >= 0 && waveAge < waveLifetime) {
-                double waveProgress = waveAge / waveLifetime;
-
-                // Tính radius của wave (bắt đầu từ ngoài, di chuyển vào trong)
-                double waveStartRadius = radius + (maxRadius * 0.4); // Bắt đầu xa hơn
-                double waveEndRadius = radius * 0.3; // Kết thúc gần tâm hơn
-                double waveRadius = waveStartRadius - (waveStartRadius - waveEndRadius) * waveProgress;
-
-                // Tính alpha của wave (xuất hiện -> đỉnh -> mờ dần)
-                double waveAlpha;
-                if (waveProgress < 0.2) {
-                    // Fade in
-                    waveAlpha = waveProgress / 0.2;
-                } else if (waveProgress < 0.8) {
-                    // Stable
-                    waveAlpha = 1.0;
-                } else {
-                    // Fade out
-                    waveAlpha = (1.0 - waveProgress) / 0.2;
-                }
-
-                // Điều chỉnh alpha dựa trên khoảng cách để tránh overlap
-                double distanceFromOriginal = Math.abs(waveRadius - radius);
-                if (distanceFromOriginal < radius * 0.1) {
-                    waveAlpha *= 0.6; // Giảm alpha khi gần vòng gốc
-                }
-
-                // Vẽ wave nếu đủ lớn và đủ rõ
-                if (waveRadius > 0.2 && waveAlpha > 0.1) {
-                    drawRingWithAlpha(targetInfo, waveRadius, points, u, v, normal, depthMult, holeRadius, waveAlpha, ticks, waveIndex + 1);
-                }
-            }
-        }
-    }
-
-    // ===== METHOD VẼ VÒNG VỚI ĐỘ TRONG SUỐT =====
-    private void drawRingWithAlpha(TargetInfo targetInfo, double radius, int points, Vector u, Vector v, Vector normal,
-                                   double depthMult, double holeRadius, double alpha, int ticks, int waveOffset) {
-
-        for (int i = 0; i < points; i++) {
-            double angle = (2 * Math.PI * i) / points;
-            double localX = radius * Math.cos(angle);
-            double localY = radius * Math.sin(angle);
-
-            double depth = (holeRadius / Math.max(radius, 0.1)) * 6.0 * depthMult;
-
-            Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
-            Vector depthOffset = normal.clone().multiply(-depth);
-            Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
-
-            // Tính màu sắc
-            int baseColor = (int)(10 + radius * 3);
-            int colorValue = (int)(baseColor * alpha);
-            colorValue = Math.max(colorValue, 3);
-
-            // Hiệu ứng nhấp nháy nhẹ cho wave mới
-            if (waveOffset > 0) {
-                double flicker = 0.9 + 0.1 * Math.sin((ticks + waveOffset * 7) * 0.4);
-                colorValue = (int)(colorValue * flicker);
-
-                // Wave mới có màu hơi khác
-                colorValue = Math.min(255, (int)(colorValue * 1.2));
-            }
-
-            Color ringColor = Color.fromRGB(
-                    Math.min(255, colorValue),
-                    Math.min(255, colorValue),
-                    Math.min(255, colorValue)
-            );
-
-            // Kích thước particle
-            float particleSize = (float)(0.3f * Math.sqrt(alpha));
-            particleSize = Math.max(particleSize, 0.1f);
-
-            targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
-                    0, 0, 0, 0, new Particle.DustOptions(ringColor, particleSize));
-
-            // Particle bổ sung cho wave mới (thưa hơn để không lag)
-            if (waveOffset > 0 && i % 4 == 0 && alpha > 0.5) {
-                targetInfo.location.getWorld().spawnParticle(Particle.SPELL_WITCH, point, 1,
-                        0.02, 0.02, 0.02, 0.001);
+        // Chỉ vẽ nếu chưa đạt depth 14
+        if (currentDepth < 17.0) {
+            for (int i = 0; i < points; i++) {
+                double angle = (2 * Math.PI * i) / points;
+                double localX = currentRadius * Math.cos(angle);
+                double localY = currentRadius * Math.sin(angle);
+                double depth = currentDepth;
+                Vector localPos = u.clone().multiply(localX).add(v.clone().multiply(localY));
+                Vector depthOffset = normal.clone().multiply(-depth);
+                Location point = targetInfo.location.clone().add(localPos).add(depthOffset);
+                Color ringColor = Color.fromRGB(
+                        (int)(10 + currentRadius * 3),
+                        (int)(10 + currentRadius * 3),
+                        (int)(10 + currentRadius * 3)
+                );
+                targetInfo.location.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+                        0, 0, 0, 0, new Particle.DustOptions(ringColor, 0.3f));
             }
         }
     }
